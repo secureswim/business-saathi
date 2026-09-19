@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
+import hashlib
+import hmac
 import secrets
 import sys
 from pathlib import Path
@@ -26,6 +30,26 @@ def _valid_tunnel_secret(value: str | None) -> bool:
     return bool(value) and secrets.compare_digest(value, config.INTERNAL_SECRET)
 
 
+def _access_cookie() -> str:
+    return hmac.new(config.SITE_PASSWORD.encode(), b"saathi-demo-access",
+                    hashlib.sha256).hexdigest()
+
+
+def _valid_access_cookie(value: str | None) -> bool:
+    return bool(value) and secrets.compare_digest(value, _access_cookie())
+
+
+def _valid_basic_auth(value: str | None) -> bool:
+    if not value or not value.startswith("Basic "):
+        return False
+    try:
+        credentials = base64.b64decode(value[6:], validate=True).decode("utf-8")
+        _, password = credentials.split(":", 1)
+    except (ValueError, UnicodeDecodeError, binascii.Error):
+        return False
+    return secrets.compare_digest(password, config.SITE_PASSWORD)
+
+
 @app.middleware("http")
 async def protect_tunnel_surface(request: Request, call_next):
     """Expose only secret-bearing n8n callbacks through cloudflared.
@@ -38,6 +62,24 @@ async def protect_tunnel_surface(request: Request, call_next):
     if (host == config.TUNNEL_HOST_HEADER
             and not _valid_tunnel_secret(request.headers.get("x-saathi-secret"))):
         return JSONResponse({"error": "tunnel_auth_required"}, status_code=403)
+    if config.SITE_PASSWORD and host != config.TUNNEL_HOST_HEADER:
+        path = request.url.path
+        callback = (path.startswith("/api/internal/")
+                    and _valid_tunnel_secret(request.headers.get("x-saathi-secret")))
+        if path != "/api/health" and not callback:
+            authenticated = _valid_access_cookie(request.cookies.get("saathi_access"))
+            basic = _valid_basic_auth(request.headers.get("authorization"))
+            if not authenticated and not basic:
+                return JSONResponse(
+                    {"error": "demo_auth_required"}, status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="Business Saathi Demo"'})
+            response = await call_next(request)
+            if basic and not authenticated:
+                response.set_cookie("saathi_access", _access_cookie(), httponly=True,
+                                    secure=request.url.scheme == "https"
+                                    or request.headers.get("x-forwarded-proto") == "https",
+                                    samesite="lax")
+            return response
     return await call_next(request)
 
 
@@ -78,6 +120,9 @@ async def ws_endpoint(socket: WebSocket):
     host = socket.headers.get("host", "").split(":", 1)[0].lower()
     if host == config.TUNNEL_HOST_HEADER:
         await socket.close(code=1008, reason="WebSocket unavailable through callback tunnel")
+        return
+    if config.SITE_PASSWORD and not _valid_access_cookie(socket.cookies.get("saathi_access")):
+        await socket.close(code=1008, reason="Demo access required")
         return
     await socket.accept()
     ws.register(socket)

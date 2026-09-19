@@ -8,4 +8,4 @@ if [ ! -f data/saathi.db ]; then
   cp data/saathi.db data/saathi.seed.db
 fi
 [ -f data/saathi.seed.db ] || cp data/saathi.db data/saathi.seed.db
-exec python3 -m uvicorn backend.api.main:app --host 127.0.0.1 --port "${SAATHI_PORT:-8000}"
+exec python3 -m uvicorn backend.api.main:app --host "${SAATHI_HOST:-127.0.0.1}" --port "${PORT:-${SAATHI_PORT:-8000}}"

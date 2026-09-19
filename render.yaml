@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: business-saathi
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash run.sh
+    healthCheckPath: /api/health
+    envVars:
+      - key: SAATHI_HOST
+        value: 0.0.0.0
+      - key: SAATHI_SITE_PASSWORD
+        generateValue: true
+      - key: SAATHI_INTERNAL_SECRET
+        generateValue: true
+      - key: N8N_WEBHOOK_SECRET
+        generateValue: true

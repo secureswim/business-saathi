@@ -125,6 +125,7 @@ NVIDIA_BASE_URL = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com
 NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-super-120b-a12b")
 LLM_PROVIDER = os.getenv("SAATHI_LLM_PROVIDER", "auto").lower()
 PORT = int(_num("SAATHI_PORT", 8000))
+SITE_PASSWORD = os.getenv("SAATHI_SITE_PASSWORD", "")  # Optional hosted demo access
 
 # --------------------------------------------------------------------------
 # privacy -- enforced in graph/privacy.py, not by convention

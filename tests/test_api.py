@@ -1,5 +1,6 @@
 """Endpoints: happy paths, validation, error codes, and the event sequence."""
 import json
+import base64
 
 import pytest
 from fastapi.testclient import TestClient
@@ -23,6 +24,35 @@ def test_callback_tunnel_rejects_public_requests_and_accepts_n8n_secret():
     assert client.get("/api/health", headers=tunneled).status_code == 403
     allowed = {**tunneled, "X-Saathi-Secret": config.INTERNAL_SECRET}
     assert client.get("/api/health", headers=allowed).status_code == 200
+
+
+def test_hosted_demo_password_covers_pages_api_and_websocket(monkeypatch):
+    monkeypatch.setattr(config, "SITE_PASSWORD", "test-demo-password")
+    private = TestClient(app)
+    assert private.get("/api/health").status_code == 200
+    assert private.get("/").status_code == 401
+    assert private.get("/ops").status_code == 401
+    assert private.post("/api/admin/reset").status_code == 401
+    assert private.get("/api/merchants").status_code == 401
+    assert private.get("/static/ops.js").status_code == 401
+    assert private.get("/", headers={"Authorization": "Basic !!!"}).status_code == 401
+    with pytest.raises(Exception):
+        with private.websocket_connect("/ws"):
+            pass
+
+    credentials = base64.b64encode(b"judge:test-demo-password").decode()
+    response = private.get("/", headers={"Authorization": f"Basic {credentials}"})
+    assert response.status_code == 200
+    assert "httponly" in response.headers["set-cookie"].lower()
+    assert private.get("/ops").status_code == 200
+    assert private.get("/api/merchants").status_code == 200
+    with private.websocket_connect("/ws") as socket:
+        socket.send_text("ping")
+
+    callback = {"X-Saathi-Secret": config.INTERNAL_SECRET}
+    response = private.post("/api/internal/validate-action", json={"run_id": "missing"},
+                            headers=callback)
+    assert response.status_code == 404
 
 
 def test_query_happy_path():

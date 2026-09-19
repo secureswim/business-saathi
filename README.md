@@ -30,6 +30,27 @@ python scripts/generate.py && python scripts/recompute_patterns.py
 Run the two on separate screens: the merchant route on a phone or second
 window facing the room, `/ops` on the projector.
 
+## Host the demo on Render
+
+The repository includes a [Render Blueprint](render.yaml) for one free Python web
+service. Open [Deploy to Render](https://render.com/deploy?repo=https://github.com/secureswim/business-saathi),
+sign in, and create the Blueprint from this repository. The service generates
+its own SQLite seed on startup, listens on Render's `PORT`, and serves both `/`
+and `/ops` at its `onrender.com` address. In the service's **Environment** page,
+copy the generated `SAATHI_SITE_PASSWORD`; a browser asks for it once (any
+username works). Share the address and password with demo viewers.
+
+The hosted service starts with offline adapters. To enable real reasoning, add
+`SAATHI_REAL_LLM=1` and `NVIDIA_API_KEY` or `GEMINI_API_KEY` in Render's
+Environment page. Never commit `.env` or put keys in the Blueprint. The other
+adapters similarly require their own credentials and flags; see `.env.example`.
+For n8n callbacks, set `PUBLIC_API_URL` to the hosted URL and configure n8n
+with the generated `SAATHI_INTERNAL_SECRET` as its `X-Saathi-Secret` header.
+
+Render's free service sleeps when idle and has ephemeral storage. A wake or
+redeploy regenerates the synthetic database, resetting demo interactions. Use
+a paid service with a persistent disk (or migrate storage) if changes must last.
+
 The Soundbox can be dragged to rotate. Its top buttons control volume, replay,
 and Saathi voice input. The payment demonstration is explicitly simulated;
 business questions use the existing backend. See [the interaction notes](docs/SOUNDBOX.md).
