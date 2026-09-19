@@ -1,0 +1,280 @@
+{
+  "name": "saathi-proactive-monitoring",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "every-5-minutes",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/monitor/candidates?limit=20",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 1,
+              "waitBetweenTries": 2000
+            }
+          }
+        }
+      },
+      "id": "candidates",
+      "name": "Candidates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -400,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/monitor/evaluate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"merchant_ids\": {{ JSON.stringify($json.merchant_ids || []) }}}"
+      },
+      "id": "evaluate",
+      "name": "Evaluate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -200,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "evaluations",
+        "options": {}
+      },
+      "id": "split-evaluations",
+      "name": "Split evaluations",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.all_met }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "all-four-conditions-met?",
+      "name": "All four conditions met?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/peer-playbook",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 1,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"merchant_id\": {{ JSON.stringify($json.merchant_id) }}, \"situation_kind\": \"evening_decline\"}"
+      },
+      "id": "peer-playbook",
+      "name": "Peer playbook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/alerts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"merchant_id\": {{ JSON.stringify($('All four conditions met?').item.json.merchant_id) }}, \"alert_type\": {{ JSON.stringify($('All four conditions met?').item.json.alert_type) }}, \"severity\": {{ $('All four conditions met?').item.json.trend.change_pct }}, \"conditions\": {{ JSON.stringify($('All four conditions met?').item.json.conditions) }}, \"hinglish\": \"\", \"english\": \"\"}"
+      },
+      "id": "raise-alert",
+      "name": "Raise alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidates": {
+      "main": [
+        [
+          {
+            "node": "Evaluate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate": {
+      "main": [
+        [
+          {
+            "node": "Split evaluations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split evaluations": {
+      "main": [
+        [
+          {
+            "node": "All four conditions met?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All four conditions met?": {
+      "main": [
+        [
+          {
+            "node": "Peer playbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Peer playbook": {
+      "main": [
+        [
+          {
+            "node": "Raise alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

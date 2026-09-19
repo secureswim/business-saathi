@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+httpx>=0.27
+pytest>=8.0
+
+# Optional, only needed when SAATHI_REAL_COGNEE=1.
+# Pin the version and verify the add/cognify/search surface on day one.
+# cognee==0.1.* 

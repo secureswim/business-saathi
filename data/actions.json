@@ -1,0 +1,366 @@
+[
+  {
+    "id": "A-001",
+    "merchant_id": "M-002",
+    "action_type": "evening_offer",
+    "params": {
+      "discount_rupees": 19,
+      "discount_pct": 19.3,
+      "window": "18:00-21:00",
+      "days": 3
+    },
+    "started_days_ago": 31,
+    "duration_days": 3,
+    "outcome": "recovered",
+    "gmv_delta_pct": 21.0,
+    "txn_delta_pct": 22.5,
+    "retention_after_30d_pct": 62.40822661435065,
+    "note": "evening decline recovered within the offer window"
+  },
+  {
+    "id": "A-002",
+    "merchant_id": "M-003",
+    "action_type": "evening_offer",
+    "params": {
+      "discount_rupees": 11,
+      "discount_pct": 20.7,
+      "window": "18:00-21:00",
+      "days": 3
+    },
+    "started_days_ago": 70,
+    "duration_days": 3,
+    "outcome": "recovered",
+    "gmv_delta_pct": 14.1,
+    "txn_delta_pct": 18.3,
+    "retention_after_30d_pct": 70.23557018491547,
+    "note": "evening decline recovered within the offer window"
+  },
+  {
+    "id": "A-003",
+    "merchant_id": "M-004",
+    "action_type": "evening_offer",
+    "params": {
+      "discount_rupees": 17,
+      "discount_pct": 18.1,
+      "window": "18:00-21:00",
+      "days": 3
+    },
+    "started_days_ago": 39,
+    "duration_days": 3,
+    "outcome": "recovered",
+    "gmv_delta_pct": 25.4,
+    "txn_delta_pct": 21.0,
+    "retention_after_30d_pct": 70.53605054919633,
+    "note": "evening decline recovered within the offer window"
+  },
+  {
+    "id": "A-004",
+    "merchant_id": "M-005",
+    "action_type": "evening_offer",
+    "params": {
+      "discount_rupees": 10,
+      "discount_pct": 15.2,
+      "window": "18:00-21:00",
+      "days": 3
+    },
+    "started_days_ago": 67,
+    "duration_days": 3,
+    "outcome": "recovered",
+    "gmv_delta_pct": 15.3,
+    "txn_delta_pct": 25.8,
+    "retention_after_30d_pct": 76.72967897179828,
+    "note": "evening decline recovered within the offer window"
+  },
+  {
+    "id": "A-005",
+    "merchant_id": "M-006",
+    "action_type": "evening_offer",
+    "params": {
+      "discount_rupees": 5,
+      "discount_pct": 19.7,
+      "window": "18:00-21:00",
+      "days": 3
+    },
+    "started_days_ago": 67,
+    "duration_days": 3,
+    "outcome": "recovered",
+    "gmv_delta_pct": 20.4,
+    "txn_delta_pct": 29.5,
+    "retention_after_30d_pct": 64.33594790739046,
+    "note": "evening decline recovered within the offer window"
+  },
+  {
+    "id": "A-006",
+    "merchant_id": "M-007",
+    "action_type": "evening_offer",
+    "params": {
+      "discount_rupees": 5,
+      "discount_pct": 18.1,
+      "window": "18:00-21:00",
+      "days": 3
+    },
+    "started_days_ago": 39,
+    "duration_days": 3,
+    "outcome": "no_change",
+    "gmv_delta_pct": -0.4,
+    "txn_delta_pct": 1.9,
+    "retention_after_30d_pct": 8.0,
+    "note": "no measurable change; footfall itself had dropped"
+  },
+  {
+    "id": "A-007",
+    "merchant_id": "M-012",
+    "action_type": "deep_discount",
+    "params": {
+      "discount_pct": 25,
+      "days": 7
+    },
+    "started_days_ago": 26,
+    "duration_days": 7,
+    "outcome": "spike_then_fade",
+    "gmv_delta_pct": 34.9,
+    "txn_delta_pct": 50.6,
+    "retention_after_30d_pct": 11.590292061751999,
+    "note": "volume spiked during the offer, retention collapsed after"
+  },
+  {
+    "id": "A-008",
+    "merchant_id": "M-013",
+    "action_type": "deep_discount",
+    "params": {
+      "discount_pct": 25,
+      "days": 7
+    },
+    "started_days_ago": 67,
+    "duration_days": 7,
+    "outcome": "spike_then_fade",
+    "gmv_delta_pct": 26.4,
+    "txn_delta_pct": 54.6,
+    "retention_after_30d_pct": 6.4578782346636885,
+    "note": "volume spiked during the offer, retention collapsed after"
+  },
+  {
+    "id": "A-009",
+    "merchant_id": "M-014",
+    "action_type": "deep_discount",
+    "params": {
+      "discount_pct": 30,
+      "days": 7
+    },
+    "started_days_ago": 59,
+    "duration_days": 7,
+    "outcome": "spike_then_fade",
+    "gmv_delta_pct": 38.9,
+    "txn_delta_pct": 47.5,
+    "retention_after_30d_pct": 5.120044284121057,
+    "note": "volume spiked during the offer, retention collapsed after"
+  },
+  {
+    "id": "A-010",
+    "merchant_id": "M-015",
+    "action_type": "deep_discount",
+    "params": {
+      "discount_pct": 35,
+      "days": 7
+    },
+    "started_days_ago": 31,
+    "duration_days": 7,
+    "outcome": "recovered",
+    "gmv_delta_pct": 17.5,
+    "txn_delta_pct": 17.1,
+    "retention_after_30d_pct": 57.56148439517657,
+    "note": "held some of the gain after the offer ended"
+  },
+  {
+    "id": "A-011",
+    "merchant_id": "M-008",
+    "action_type": "price_increase",
+    "params": {
+      "increase_rupees": 2,
+      "increase_pct": 16.4
+    },
+    "started_days_ago": 34,
+    "duration_days": 30,
+    "outcome": "recovered",
+    "gmv_delta_pct": 8.8,
+    "txn_delta_pct": -6.5,
+    "retention_after_30d_pct": null,
+    "note": "margin gain outweighed a 7% volume dip"
+  },
+  {
+    "id": "A-012",
+    "merchant_id": "M-009",
+    "action_type": "price_increase",
+    "params": {
+      "increase_rupees": 5,
+      "increase_pct": 29.2
+    },
+    "started_days_ago": 54,
+    "duration_days": 30,
+    "outcome": "declined",
+    "gmv_delta_pct": -8.6,
+    "txn_delta_pct": -29.3,
+    "retention_after_30d_pct": null,
+    "note": "lost 29% of transactions at +29% price"
+  },
+  {
+    "id": "A-013",
+    "merchant_id": "M-010",
+    "action_type": "price_increase",
+    "params": {
+      "increase_rupees": 4,
+      "increase_pct": 21.1
+    },
+    "started_days_ago": 39,
+    "duration_days": 30,
+    "outcome": "declined",
+    "gmv_delta_pct": 2.6,
+    "txn_delta_pct": -15.2,
+    "retention_after_30d_pct": null,
+    "note": "lost 15% of transactions at +21% price"
+  },
+  {
+    "id": "A-014",
+    "merchant_id": "M-011",
+    "action_type": "price_increase",
+    "params": {
+      "increase_rupees": 4,
+      "increase_pct": 19.2
+    },
+    "started_days_ago": 64,
+    "duration_days": 30,
+    "outcome": "recovered",
+    "gmv_delta_pct": 12.2,
+    "txn_delta_pct": -5.9,
+    "retention_after_30d_pct": null,
+    "note": "margin gain outweighed a 6% volume dip"
+  },
+  {
+    "id": "A-015",
+    "merchant_id": "M-002",
+    "action_type": "festive_prestock",
+    "params": {
+      "festival": "Diwali 2025",
+      "extra_stock_pct": 0
+    },
+    "started_days_ago": 315,
+    "duration_days": 10,
+    "outcome": "no_change",
+    "gmv_delta_pct": 93.0,
+    "txn_delta_pct": 86.3,
+    "retention_after_30d_pct": null,
+    "note": "ran out of stock mid-surge"
+  },
+  {
+    "id": "A-016",
+    "merchant_id": "M-003",
+    "action_type": "festive_prestock",
+    "params": {
+      "festival": "Diwali 2025",
+      "extra_stock_pct": 0
+    },
+    "started_days_ago": 315,
+    "duration_days": 10,
+    "outcome": "no_change",
+    "gmv_delta_pct": 86.5,
+    "txn_delta_pct": 101.3,
+    "retention_after_30d_pct": null,
+    "note": "ran out of stock mid-surge"
+  },
+  {
+    "id": "A-017",
+    "merchant_id": "M-004",
+    "action_type": "festive_prestock",
+    "params": {
+      "festival": "Diwali 2025",
+      "extra_stock_pct": 60
+    },
+    "started_days_ago": 315,
+    "duration_days": 10,
+    "outcome": "recovered",
+    "gmv_delta_pct": 206.3,
+    "txn_delta_pct": 229.3,
+    "retention_after_30d_pct": null,
+    "note": "pre-stocked and captured the festive surge"
+  },
+  {
+    "id": "A-018",
+    "merchant_id": "M-005",
+    "action_type": "festive_prestock",
+    "params": {
+      "festival": "Diwali 2025",
+      "extra_stock_pct": 0
+    },
+    "started_days_ago": 315,
+    "duration_days": 10,
+    "outcome": "no_change",
+    "gmv_delta_pct": 106.3,
+    "txn_delta_pct": 92.4,
+    "retention_after_30d_pct": null,
+    "note": "ran out of stock mid-surge"
+  },
+  {
+    "id": "A-019",
+    "merchant_id": "M-006",
+    "action_type": "festive_prestock",
+    "params": {
+      "festival": "Diwali 2025",
+      "extra_stock_pct": 60
+    },
+    "started_days_ago": 315,
+    "duration_days": 10,
+    "outcome": "recovered",
+    "gmv_delta_pct": 227.8,
+    "txn_delta_pct": 192.9,
+    "retention_after_30d_pct": null,
+    "note": "pre-stocked and captured the festive surge"
+  },
+  {
+    "id": "A-020",
+    "merchant_id": "M-007",
+    "action_type": "festive_prestock",
+    "params": {
+      "festival": "Diwali 2025",
+      "extra_stock_pct": 60
+    },
+    "started_days_ago": 315,
+    "duration_days": 10,
+    "outcome": "recovered",
+    "gmv_delta_pct": 239.4,
+    "txn_delta_pct": 227.9,
+    "retention_after_30d_pct": null,
+    "note": "pre-stocked and captured the festive surge"
+  },
+  {
+    "id": "A-021",
+    "merchant_id": "M-008",
+    "action_type": "festive_prestock",
+    "params": {
+      "festival": "Diwali 2025",
+      "extra_stock_pct": 0
+    },
+    "started_days_ago": 315,
+    "duration_days": 10,
+    "outcome": "no_change",
+    "gmv_delta_pct": 101.9,
+    "txn_delta_pct": 100.6,
+    "retention_after_30d_pct": null,
+    "note": "ran out of stock mid-surge"
+  },
+  {
+    "id": "A-022",
+    "merchant_id": "M-009",
+    "action_type": "festive_prestock",
+    "params": {
+      "festival": "Diwali 2025",
+      "extra_stock_pct": 0
+    },
+    "started_days_ago": 315,
+    "duration_days": 10,
+    "outcome": "no_change",
+    "gmv_delta_pct": 94.3,
+    "txn_delta_pct": 97.7,
+    "retention_after_30d_pct": null,
+    "note": "ran out of stock mid-surge"
+  }
+]

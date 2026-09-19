@@ -1,0 +1,35 @@
+/* Geometry and finish of the reference-inspired, counter-standing Soundbox. */
+.soundbox{width:340px;height:330px;transform:rotateX(-8deg) rotateY(-28deg)}
+.housing-mesh{position:absolute;inset:0;transform-style:preserve-3d;pointer-events:none}
+.shell-surface{position:absolute;left:0;top:0;transform-origin:0 0;backface-visibility:hidden}
+.face{border:0}
+.front{width:340px;height:330px;transform:translateZ(71px) rotateX(17deg);border:10px solid #e9eeee;border-radius:47px;background:linear-gradient(#20b7de 0 47%,#22255e 47% 100%);box-shadow:inset 0 0 0 2px #c9d7db,0 0 0 1px #a9bdc5;overflow:hidden}
+.qr-label{width:280px;height:276px;margin:0 0 7px;padding:14px 8px 8px;border:0;border-radius:32px;background:#fff;box-shadow:none;flex-shrink:0}
+.qr-label .paytm{font-size:32px;font-style:italic;letter-spacing:-2.7px;color:#20245c}
+.qr-label .paytm span{color:#24aed5}
+.qr-label strong{font:italic 600 10px Arial;margin:3px 0 9px;color:#17191c}
+.qr-label small{font:italic 600 9px Arial;color:#17191c}
+#demo-qr{width:146px;height:146px;margin:5px 0 0;flex-shrink:0}
+.qr-demo{font:600 5.5px Arial;letter-spacing:.5px;background:transparent;color:#475467;padding:0;margin-top:0}
+.upi{font:italic 900 18px Arial;color:#666b6e;margin-top:7px;letter-spacing:-1px}
+.upi b{font-size:20px}.upi span{font-size:16px;color:#de8629;margin:0 3px}
+.front>.device-led{position:absolute;bottom:7px;left:calc(50% - 12px);width:24px;height:3px;background:#7ae0d0;box-shadow:0 0 5px #4addba80}
+.back{width:286px;height:286px;left:27px;top:34px;transform:translateZ(-105px) rotateY(180deg);border-radius:40px;background:linear-gradient(125deg,#3886a9 0,#23688f 40%,#144a72 100%);box-shadow:inset 0 1px 2px #81b6c3,inset 0 -9px 0 #123953;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:0;overflow:hidden}
+.device-display{margin-top:25px;width:164px;height:104px;border:6px solid #1a242a;border-radius:7px;background:linear-gradient(125deg,#777d78,#545b55);box-shadow:0 2px 3px #12354b,inset 0 0 0 2px #3f4943;color:#edf3e8;text-align:center;padding:8px 11px;display:flex;flex-direction:column;align-items:center}
+.display-top{display:flex;align-items:center;justify-content:space-between;width:100%;font:7px Arial}.display-top b{font:bold 15px Arial;letter-spacing:-.6px}.display-status{font:5px var(--mono);letter-spacing:1px;margin-top:5px;color:#c9eed6}
+.device-display strong{font:26px var(--mono);letter-spacing:-1.5px;line-height:1.2;margin:2px 0}.device-display small{font:5px var(--mono);letter-spacing:1px;color:#d0d8cc;line-height:1.1}
+.device-controls{display:flex;justify-content:center;gap:12px;margin-top:18px;width:100%}
+.device-controls button{padding:0;width:32px;height:32px;border-radius:50%;background:linear-gradient(140deg,#4b94b3,#246185);box-shadow:0 3px 1px #0b3551,inset 0 1px 1px #86b1c0;color:#d5eaf2;border:1px solid #467e9a;font:19px Arial;display:grid;place-items:center}
+.device-controls button:hover{background:#468fb0;color:#fff}.device-controls button:active{box-shadow:inset 0 2px 3px #123750;transform:translateY(2px)}
+.device-controls #device-talk{background:linear-gradient(135deg,#29c9e8,#009bc7);border-color:#31b9d4;color:#fff;font-size:17px}
+.rear-saathi-label{font:5px var(--mono);letter-spacing:1px;color:#8fd5e6;margin:7px 0 0 133px}
+.embossed-logo{font:900 33px Arial;letter-spacing:-2px;color:#195276;text-shadow:1px 2px 1px #0d3e5e,-1px -1px 0 #397f9d;margin-top:10px}
+.rear-ports{display:flex;gap:9px;align-items:center;margin-top:12px;color:#5892a9;font-size:10px}
+.charging-port{display:block;width:25px;height:7px;border:2px solid #376681;background:#082e49;border-radius:4px}
+.port-cover{border:1px solid #123b58;border-radius:4px;width:40px;padding:5px;text-align:center;font:5px Arial;box-shadow:inset 0 1px 0 #57839b}
+.side-grille{position:absolute;left:calc(50% + 157px);top:100px;width:76px;height:132px;transform-origin:0 50%;transform:translateZ(12px) rotateY(78deg);background-image:radial-gradient(ellipse 1.7px 2.8px at center,#082f47 80%,transparent 100%);background-size:12px 13px;border-radius:50%;mask-image:radial-gradient(ellipse,#000 56%,transparent 69%);pointer-events:none;backface-visibility:hidden}
+.device-shadow{top:411px;height:47px;left:17%;width:72%;filter:blur(14px)}
+.counter-plane{top:420px}.model-caption{top:466px}
+.view-controls{gap:13px}.view-controls #rear-view{color:#73b4cc}
+@media(max-width:1000px){.soundbox{scale:.78}.view-controls{gap:9px;font-size:8px}.view-controls button{font-size:8px}}
+@media(max-width:700px){.soundbox{scale:.72}#model-view{inset:45px 0 85px}.device-shadow{top:296px;height:35px}.counter-plane{top:312px}.view-controls{gap:10px;flex-wrap:wrap;bottom:0}.view-controls>span:first-child{flex-basis:100%;text-align:center;margin-bottom:0}}

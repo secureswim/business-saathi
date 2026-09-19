@@ -1,0 +1,18 @@
+# n8n beside the API. The API is reachable from inside the container at
+# host.docker.internal; on Linux the extra_hosts line makes that work.
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    ports: ["5678:5678"]
+    environment:
+      - N8N_SECURE_COOKIE=false
+      - GENERIC_TIMEZONE=Asia/Kolkata
+      - SAATHI_API=http://host.docker.internal:8000
+      - SAATHI_SECRET=saathi-demo-secret
+    volumes:
+      - ./workflows:/home/node/workflows
+      - n8n_data:/home/node/.n8n
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+volumes:
+  n8n_data:

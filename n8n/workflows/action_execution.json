@@ -1,0 +1,521 @@
+{
+  "name": "saathi-action-execution",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "saathi/execute",
+        "responseMode": "onReceived"
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// idempotency key: a retried webhook must not create two campaigns\nconst b = $input.first().json.body || $input.first().json;\nreturn [{json: {run_id: b.run_id, merchant_id: b.merchant_id,\n  action_type: b.action_type, params: b.params || {},\n  situation_id: b.situation_id ?? null,\n  idempotency_key: b.run_id}}];"
+      },
+      "id": "normalise",
+      "name": "Normalise",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/validate-action",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($json.run_id) }}}"
+      },
+      "id": "validate",
+      "name": "Validate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -200,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "valid?",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/simulate-campaign",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Normalise').item.json.run_id) }}}"
+      },
+      "id": "create-campaign-simulated",
+      "name": "Create campaign SIMULATED",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/record-action",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Normalise').item.json.run_id) }}}"
+      },
+      "id": "record-action",
+      "name": "Record action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/workflow-node",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 1,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Normalise').item.json.run_id) }}, \"node\": \"campaign running\", \"status\": \"success\", \"simulated\": true}"
+      },
+      "id": "notify-running",
+      "name": "Notify running",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        200
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "amount": 60,
+        "unit": "seconds"
+      },
+      "id": "wait-for-the-campaign-window",
+      "name": "Wait for the campaign window",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/measure-outcome",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Normalise').item.json.run_id) }}}"
+      },
+      "id": "measure-outcome-simulated",
+      "name": "Measure outcome SIMULATED",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/graph/writeback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Normalise').item.json.run_id) }}}"
+      },
+      "id": "graph-write-back",
+      "name": "Graph write-back",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        200
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/workflow-node",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 1,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Normalise').item.json.run_id) }}, \"node\": \"learning complete\", \"status\": \"success\"}"
+      },
+      "id": "notify-learned",
+      "name": "Notify learned",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        200
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/workflow-node",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 1,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Normalise').item.json.run_id) }}, \"node\": \"workflow\", \"status\": \"failed\", \"detail\": {{ JSON.stringify($json.reason || \"step failed\") }}}"
+      },
+      "id": "fail-callback",
+      "name": "Fail callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        460
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise": {
+      "main": [
+        [
+          {
+            "node": "Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Create campaign SIMULATED",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create campaign SIMULATED": {
+      "main": [
+        [
+          {
+            "node": "Record action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record action": {
+      "main": [
+        [
+          {
+            "node": "Notify running",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify running": {
+      "main": [
+        [
+          {
+            "node": "Wait for the campaign window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for the campaign window": {
+      "main": [
+        [
+          {
+            "node": "Measure outcome SIMULATED",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Measure outcome SIMULATED": {
+      "main": [
+        [
+          {
+            "node": "Graph write-back",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph write-back": {
+      "main": [
+        [
+          {
+            "node": "Notify learned",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

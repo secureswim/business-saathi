@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Business Saathi — Ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  body{display:grid;grid-template-rows:auto 1fr;height:100vh;overflow:hidden}
+  header{display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid var(--line)}
+  header h1{font-size:14px;margin:0;font-weight:600;letter-spacing:-.01em}
+  .dot{width:7px;height:7px;border-radius:99px;background:var(--good)}
+  .spacer{flex:1}
+  .chip{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+        padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+  .chip.sim{border-color:#4a3418;color:var(--warn)}
+  main{display:grid;grid-template-columns:270px 1fr 1fr 380px;gap:1px;background:var(--line);
+       overflow:hidden}
+  @media(max-width:1439px){main{grid-template-columns:250px 1fr 1fr}#col4{display:none}}
+  section{background:var(--bg);overflow-y:auto;padding:16px}
+  section::-webkit-scrollbar{width:6px}
+  section::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+  h2.label{margin:0 0 12px}
+  h2.label.mt{margin-top:22px}
+  .stack{display:flex;flex-direction:column;gap:9px}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .tip{font-size:11px;color:var(--muted);line-height:1.5}
+
+  /* pipeline */
+  .stage{display:flex;justify-content:space-between;align-items:center;
+         font-family:var(--mono);font-size:10.5px;padding:5px 8px;border-radius:6px;
+         border:1px solid transparent;color:#4d525b;transition:all .25s}
+  .stage.on{color:var(--accent);border-color:var(--accent-dim);background:#0c1c23}
+  .stage.bad{color:var(--bad);border-color:#4a2320;background:#1d1210}
+  .stage b{font-weight:400;color:var(--muted)}
+
+  /* evidence */
+  .q{font-size:16px;line-height:1.45;font-weight:500}
+  .a{font-size:13.5px;line-height:1.55;border-left:2px solid var(--accent);padding-left:11px}
+  .a.bad{border-left-color:var(--bad)}
+  .ev{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--surface);
+      opacity:0;transform:translateY(6px);animation:in .28s forwards}
+  .ev.off{opacity:.45;border-style:dashed}
+  @keyframes in{to{opacity:1;transform:none}}
+  .ev.off{animation:inoff .28s forwards}
+  @keyframes inoff{to{opacity:.45;transform:none}}
+  .ev .top{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:7px}
+  .src{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+       padding:2px 6px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+  .src.graph{color:var(--accent);border-color:var(--accent-dim)}
+  .src.finance{color:var(--warn);border-color:#4a3418}
+  .src.merchant_input{color:var(--good);border-color:#1d4638}
+  .src.integration{color:#b39ddb;border-color:#332b47}
+  .tier{font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:4px;
+        border:1px solid var(--line);color:var(--muted)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px}
+  .kv b{font-weight:400;color:var(--muted);font-family:var(--mono);font-size:10.5px}
+  .kv span{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .hi{color:var(--accent)} .lo{color:var(--warn)} .er{color:var(--bad)}
+  details summary{cursor:pointer;font-size:10.5px;color:var(--muted);margin-top:7px;
+                  font-family:var(--mono)}
+  details pre{font-size:10px;color:var(--muted);background:var(--bg);padding:9px;
+              border-radius:7px;overflow-x:auto;max-height:220px;border:1px solid var(--line)}
+
+  /* graph */
+  #graph{width:100%;height:330px;display:block}
+  .counters{display:flex;gap:22px;padding:12px 0;border-top:1px solid var(--line);
+            border-bottom:1px solid var(--line);margin:8px 0 14px}
+  .counters div b{display:block;font-family:var(--mono);font-size:24px;font-weight:500;
+                  line-height:1}
+  .counters div.changed b{color:var(--accent);animation:pop .8s}
+  @keyframes pop{0%{transform:scale(1)}35%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+  /* workflow */
+  .steps{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+  .step{font-family:var(--mono);font-size:9.5px;padding:3px 8px;border-radius:99px;
+        border:1px solid var(--line);color:#4d525b}
+  .step.on{border-color:var(--accent);color:var(--accent)}
+  .step.bad{border-color:var(--bad);color:var(--bad)}
+  .node{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;
+        padding:3px 0;border-bottom:1px solid #1b1b22}
+  .alert{border:1px solid var(--warn);border-radius:10px;padding:11px 13px;background:#1a1410;
+         font-size:12.5px;line-height:1.5}
+  .cond{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;
+        color:var(--muted)}
+  .cond.ok{color:var(--good)} .cond.no{color:var(--bad)}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="live"></span>
+  <h1>Business Saathi <span style="color:var(--muted);font-weight:400">/ ops console</span></h1>
+  <span class="spacer"></span>
+  <span id="adapters" class="row"></span>
+</header>
+<main>
+  <!-- 1 ------------------------------------------------ pipeline -->
+  <section id="col1">
+    <h2 class="label">Pipeline</h2>
+    <div id="pipeline" class="stack"></div>
+
+    <h2 class="label mt">Heard</h2>
+    <div id="heard" class="stack"><div class="tip">waiting…</div></div>
+
+    <h2 class="label mt">Intent</h2>
+    <div id="intent" class="stack"><div class="tip">waiting…</div></div>
+
+    <h2 class="label mt">Merchant</h2>
+    <div id="mctx" class="stack"><div class="tip">waiting…</div></div>
+  </section>
+
+  <!-- 2 ------------------------------------------------ evidence -->
+  <section id="col2">
+    <h2 class="label">Question</h2>
+    <div id="question" class="q" style="margin-bottom:14px;color:var(--muted)">—</div>
+    <div id="answer" class="a" style="margin-bottom:18px;display:none"></div>
+    <h2 class="label">Evidence trail</h2>
+    <div id="evidence" class="stack"></div>
+  </section>
+
+  <!-- 3 ------------------------------------------------ graph -->
+  <section id="col3">
+    <h2 class="label">Merchant graph</h2>
+    <canvas id="graph"></canvas>
+    <div id="hover" class="tip" style="min-height:28px"></div>
+    <h2 class="label">What the graph knows</h2>
+    <div class="counters">
+      <div><b class="num" id="c1">—</b><span class="label">cohort</span></div>
+      <div><b class="num" id="c2">—</b><span class="label">tried</span></div>
+      <div id="c3box"><b class="num" id="c3">—</b><span class="label">worked</span></div>
+      <div id="c4box"><b class="num" id="c4">—</b><span class="label">success</span></div>
+    </div>
+    <div id="patterns" class="stack"></div>
+  </section>
+
+  <!-- 4 ------------------------------------------------ workflow -->
+  <section id="col4">
+    <h2 class="label">Action run</h2>
+    <div id="run" class="stack"><div class="tip">no run yet</div></div>
+
+    <h2 class="label mt">Workflow nodes</h2>
+    <div id="nodes" class="stack"><div class="tip">idle</div></div>
+
+    <h2 class="label mt">Proactive alerts</h2>
+    <div id="alerts" class="stack"><div class="tip">none</div></div>
+
+    <h2 class="label mt">Presenter</h2>
+    <div class="stack">
+      <select id="merchant"></select>
+      <div class="row">
+        <input id="q" placeholder="type a question" style="flex:1;min-width:0">
+        <button id="send">Ask</button>
+      </div>
+      <div class="row">
+        <button id="scan">Trigger alert scan</button>
+        <button id="day">Simulate a day</button>
+        <button id="reset">Reset demo</button>
+      </div>
+      <div class="tip">Merchant route: <span class="num">/</span> — open it on a second screen.</div>
+    </div>
+  </section>
+</main>
+<script src="/static/ops.js"></script>
+</body>
+</html>

@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paytm Business Saathi</title>
+<style>
+:root{
+  --bg:#0A0A0E; --panel:#101117; --panel-2:#14161E; --line:#1F222C; --line-2:#2A2E3A;
+  --fg:#EDEFF3; --fg-2:#9AA1AF; --fg-3:#646B7A;
+  --accent:#00B4F0; --accent-dim:#0B6E92; --warn:#E8913A; --bad:#E8556A; --good:#3FC98A;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,system-ui,sans-serif;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+.mono{font-family:var(--mono)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3)}
+
+/* ---------- shell ---------- */
+.top{display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--line);
+  background:#0A0A0E;position:sticky;top:env(safe-area-inset-top,0px);z-index:30;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand h1{font-size:16px;margin:0;font-weight:650;letter-spacing:-.01em;white-space:nowrap}
+.brand .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--accent);
+  border:1px solid var(--accent-dim);padding:2px 6px;border-radius:4px;text-transform:uppercase}
+.top .spacer{flex:1}
+select,.btn{background:var(--panel-2);color:var(--fg);border:1px solid var(--line-2);
+  border-radius:8px;padding:7px 11px}
+select{max-width:100%}
+.btn:hover{border-color:var(--accent-dim);color:#fff}
+.btn.primary{background:var(--accent);color:#03212C;border-color:var(--accent);font-weight:650}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.health{font-family:var(--mono);font-size:10.5px;color:var(--fg-3);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%;min-width:0}
+@media (max-width:760px){.health{white-space:normal}}
+
+.wrap{max-width:1560px;margin:0 auto;padding:20px 22px 64px;
+  display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:1080px){.wrap{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card + .card{margin-top:16px}
+.card h3{margin:0 0 4px;font-size:14.5px;font-weight:620}
+.sub{color:var(--fg-2);font-size:12.5px;margin:0 0 12px}
+
+/* ---------- merchant summary ---------- */
+.mhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.mhead .name{font-size:19px;font-weight:650;letter-spacing:-.01em}
+.mhead .meta{color:var(--fg-2);font-size:12.5px;margin-top:2px}
+.delta{font-family:var(--mono);font-size:22px;font-weight:600;white-space:nowrap}
+.delta.bad{color:var(--bad)} .delta.warn{color:var(--warn)} .delta.good{color:var(--good)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:14px}
+.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 11px}
+.kpi .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3)}
+.kpi .v{font-size:16px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+
+/* ---------- voice ---------- */
+.voicebar{display:flex;gap:10px;align-items:center}
+.mic{width:46px;height:46px;flex:0 0 46px;border-radius:50%;border:1px solid var(--line-2);
+  background:var(--panel-2);display:grid;place-items:center;transition:.15s}
+.mic:hover{border-color:var(--accent);color:var(--accent)}
+.mic.live{background:var(--accent);color:#03212C;border-color:var(--accent);
+  animation:pulse 1.3s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,180,240,.45)}50%{box-shadow:0 0 0 10px rgba(0,180,240,0)}}
+.mic svg{width:19px;height:19px}
+#q{flex:1;min-width:0;background:var(--panel-2);border:1px solid var(--line-2);color:var(--fg);
+  border-radius:8px;padding:11px 13px;font-family:inherit;font-size:14px}
+#q:focus{outline:none;border-color:var(--accent-dim)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.chip{background:transparent;border:1px solid var(--line-2);color:var(--fg-2);border-radius:999px;
+  padding:5px 11px;font-size:12px}
+.chip:hover{border-color:var(--accent-dim);color:var(--fg)}
+
+/* ---------- transcript ---------- */
+.turn{margin-bottom:12px}
+.turn .who{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--fg-3);margin-bottom:5px}
+.bubble{border:1px solid var(--line);border-radius:8px;padding:11px 13px;background:var(--panel-2)}
+.turn.me .bubble{font-style:italic;color:var(--fg-2)}
+.turn.ai .bubble{border-color:var(--accent-dim);background:rgba(0,180,240,.05)}
+.intentpill{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;border:1px solid var(--line-2);border-radius:4px;padding:1px 6px;
+  color:var(--fg-3);margin-left:8px}
+
+/* ---------- quadrants ---------- */
+.quad{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.quad{grid-template-columns:minmax(0,1fr)}}
+.qc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:15px;
+  display:flex;flex-direction:column}
+.qc.tone-critical{border-color:#4A2630} .qc.tone-warning{border-color:#4A3A22}
+.qc.tone-positive{border-color:#1E4438} .qc.tone-neutral{border-color:var(--line)}
+.qc .qh{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:9px}
+.qc.tone-critical .qh{color:var(--bad)} .qc.tone-warning .qh{color:var(--warn)}
+.qc.tone-positive .qh{color:var(--good)}
+.qc .qb{font-size:13.5px;color:#DDE1E8}
+.qc .qhl{font-family:var(--mono);font-size:12px;margin-top:10px;color:var(--fg);
+  border-top:1px solid var(--line);padding-top:9px}
+.trace{margin-top:9px}
+.trace summary{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--fg-3);cursor:pointer;list-style:none}
+.trace summary::marker{display:none}
+.trace summary:hover{color:var(--accent)}
+.trace ul{margin:8px 0 0;padding-left:15px;color:var(--fg-3);font-size:11.5px;
+  font-family:var(--mono);line-height:1.65}
+
+/* ---------- proposal ---------- */
+.prop{border:1px solid var(--accent-dim);background:linear-gradient(180deg,rgba(0,180,240,.07),transparent);
+  border-radius:var(--r);padding:16px;margin-top:16px}
+.prop .pl{font-size:16px;font-weight:620}
+.prop .pe{color:var(--fg-2);font-size:12.5px;margin-top:5px}
+.prop .pa{display:flex;gap:9px;margin-top:13px;flex-wrap:wrap}
+.confbar{height:4px;background:var(--line);border-radius:3px;margin-top:12px;overflow:hidden}
+.confbar span{display:block;height:100%;background:var(--accent)}
+
+/* ---------- simulation ---------- */
+.sim{margin-top:16px}
+.sim.simwarn{border-color:#4A3A22}
+.simrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:12px}
+.simcell{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+.simcell .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3)}
+.simcell .v{font-size:15px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
+.simcell .n{font-family:var(--mono);font-size:11.5px;margin-top:3px;color:var(--fg-2)}
+.simnote{color:var(--fg-2);font-size:12.5px;margin:12px 0 0}
+.sim.simwarn .simnote{color:#E8B57A}
+
+/* ---------- workflow ---------- */
+.steps{list-style:none;margin:0;padding:0}
+.steps li{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.steps li:last-child{border-bottom:none}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);flex:0 0 8px;margin-top:6px}
+.st-done .dot{background:var(--good)} .st-failed .dot{background:var(--bad)}
+.st-running .dot{background:var(--accent);animation:pulse 1s infinite}
+.steps .sl{font-size:13px}
+.steps .sd{font-family:var(--mono);font-size:11px;color:var(--fg-3);margin-top:3px;word-break:break-word}
+.st-failed .sd{color:var(--bad)}
+.runtag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 7px;border-radius:4px;border:1px solid var(--line-2);color:var(--fg-2)}
+.runtag.done{color:var(--good);border-color:#1E4438}
+.runtag.flagged{color:var(--warn);border-color:#4A3A22}
+.runtag.failed{color:var(--bad);border-color:#4A2630}
+
+/* ---------- alerts ---------- */
+.alert{border:1px solid var(--line);border-left:2px solid var(--warn);border-radius:8px;
+  padding:11px 13px;background:var(--panel-2);margin-bottom:10px}
+.alert .ah{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--warn);margin-bottom:6px}
+.alert p{margin:0;font-size:13px;font-style:italic;color:#DDE1E8}
+.alert .aa{margin-top:10px}
+
+/* ---------- graph + charts ---------- */
+.gwrap{position:relative;background:var(--panel-2);border:1px solid var(--line);border-radius:8px}
+svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;
+  color:var(--fg-2);margin-top:10px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid var(--line-2);color:var(--fg-2);border-radius:7px;
+  padding:6px 12px;font-size:12.5px}
+.tab[aria-selected=true]{background:var(--panel-2);color:#fff;border-color:var(--accent-dim)}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3)}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.pos{color:var(--good)} .neg{color:var(--bad)} .mut{color:var(--fg-3)}
+.empty{color:var(--fg-3);font-size:12.5px;padding:8px 0}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line-2);
+  border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err{color:var(--bad);font-size:12.5px}
+.foot{max-width:1560px;margin:0 auto;padding:0 22px 40px;color:var(--fg-3);font-size:11.5px;
+  font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>Paytm Business Saathi</h1>
+    <span class="tag">Team 505</span>
+  </div>
+  <div class="spacer"></div>
+  <select id="msel" aria-label="Select merchant"></select>
+  <button class="btn ghost" id="runmon">Run monitoring</button>
+  <span class="health mono" id="health"><span class="spin"></span></span>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ left column ============ -->
+  <section>
+    <div class="card" id="mcard"><span class="spin"></span></div>
+
+    <div class="card">
+      <div class="eyebrow">Ask Saathi</div>
+      <p class="sub" style="margin-top:6px">Speak in Hindi, Hinglish or English. The merchant never types — but you can, for the demo.</p>
+      <div class="voicebar">
+        <button class="mic" id="mic" title="Hold to speak" aria-label="Speak">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 3v10M12 13a3.5 3.5 0 0 0 3.5-3.5V6.5a3.5 3.5 0 0 0-7 0v3A3.5 3.5 0 0 0 12 13Z" fill="currentColor" stroke="none"/>
+            <path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/>
+          </svg>
+        </button>
+        <input id="q" placeholder="Bhai, iss hafte sales kyun kam hain?" autocomplete="off">
+        <button class="btn primary" id="send">Ask</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div id="voicenote" class="eyebrow" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Conversation</h3>
+      <div id="transcript"><p class="empty">Ask something to begin.</p></div>
+    </div>
+
+    <div class="card">
+      <h3>Proactive alerts</h3>
+      <p class="sub">Raised by the monitoring workflow, without the merchant asking.</p>
+      <div id="alerts"><p class="empty">No alerts yet — run monitoring.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ right column ============ -->
+  <section>
+    <div id="answer"></div>
+
+    <div class="card" id="wfcard" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h3 style="margin:0">Workflow run</h3>
+        <span class="runtag" id="wftag">—</span>
+      </div>
+      <p class="sub" id="wfsub" style="margin-top:6px"></p>
+      <ul class="steps" id="wfsteps"></ul>
+      <div id="wfresult"></div>
+    </div>
+
+    <div class="card">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-panel="pgraph" aria-selected="true">Merchant graph</button>
+        <button class="tab" role="tab" data-panel="phours" aria-selected="false">Hour of day</button>
+        <button class="tab" role="tab" data-panel="pdays" aria-selected="false">Last 45 days</button>
+        <button class="tab" role="tab" data-panel="pev" aria-selected="false">Evidence base</button>
+        <button class="tab" role="tab" data-panel="pcold" aria-selected="false">Day 1</button>
+      </div>
+
+      <div id="pgraph">
+        <p class="sub">One merchant experiments. Every similar merchant benefits.</p>
+        <div class="gwrap"><svg id="gsvg" viewBox="0 0 720 420" role="img"
+          aria-label="Ego graph of this merchant, its similar peers, and one action-outcome chain"></svg></div>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>this merchant</span>
+          <span><i style="background:#5A6172"></i>similar merchant</span>
+          <span><i style="background:var(--warn)"></i>action</span>
+          <span><i style="background:var(--good)"></i>measured outcome</span>
+        </div>
+        <div class="eyebrow" id="gstats" style="margin-top:10px"></div>
+      </div>
+
+      <div id="phours" hidden>
+        <p class="sub">Average rupees taken per hour: the last 7 days against the 30 days before them.</p>
+        <svg id="hsvg" viewBox="0 0 720 320" role="img" aria-label="Hourly sales, recent week versus prior baseline"></svg>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>last 7 days</span>
+          <span><i style="background:#3A4050"></i>prior 30-day baseline</span>
+        </div>
+      </div>
+
+      <div id="pdays" hidden>
+        <p class="sub">Daily GMV, last 45 days.</p>
+        <svg id="dsvg" viewBox="0 0 720 300" role="img" aria-label="Daily GMV over the last 45 days"></svg>
+      </div>
+
+      <div id="pev" hidden>
+        <p class="sub">Every action similar merchants have tried, and what measurably happened.
+          This table is the whole argument: recommendations come from here, not from a hunch.</p>
+        <div class="tblwrap"><table id="evtbl"></table></div>
+      </div>
+
+      <div id="pcold" hidden>
+        <p class="sub">A brand-new merchant with zero transaction history. What the graph already knows
+          before they serve their first customer.</p>
+        <div class="voicebar" style="gap:8px;flex-wrap:wrap">
+          <select id="cscat" aria-label="Category"></select>
+          <select id="csloc" aria-label="Locality"></select>
+          <button class="btn primary" id="csgo">Show Day 1 intelligence</button>
+        </div>
+        <div id="csout" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<p class="foot" id="foot">Synthetic Paytm transaction data · <span id="fcount">—</span> merchants · 5 categories · 4 localities · 90 days.
+The data is simulated; the intelligence pipeline is real. No individual merchant's figures are ever
+exposed — peers are aggregated, never named.</p>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const el = (t, c, h) => { const n = document.createElement(t); if (c) n.className = c; if (h != null) n.innerHTML = h; return n; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const pct = n => (n > 0 ? '+' : '') + n.toFixed(0) + '%';
+
+const S = { merchant: 'M-001', merchants: [], answer: null, taxonomy: null };
+
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({ headers: { 'Content-Type': 'application/json' } }, opts));
+  if (!r.ok) throw new Error((await r.text()) || r.statusText);
+  return r.json();
+}
+
+/* ---------------- boot ---------------- */
+(async function boot() {
+  try {
+    const [h, ms, tax, vc] = await Promise.all([
+      api('/api/health'), api('/api/merchants'), api('/api/taxonomy'), api('/api/voice/config')
+    ]);
+    $('#health').textContent = `${h.graph_nodes} nodes · ${h.graph_edges} edges · ${h.action_chains} chains · graph:${h.graph_backend} · n8n:${h.n8n}`;
+    S.merchants = ms; S.taxonomy = tax;
+    $('#fcount').textContent = h.merchants;
+    const sel = $('#msel');
+    ms.forEach(m => {
+      const o = el('option'); o.value = m.id;
+      o.textContent = `${m.name} — ${m.category}, ${m.locality} (${pct(m.trend_pct)})`;
+      sel.appendChild(o);
+    });
+    sel.value = S.merchant;
+    sel.onchange = () => { S.merchant = sel.value; loadMerchant(); $('#transcript').innerHTML = '<p class="empty">Ask something to begin.</p>'; $('#answer').innerHTML = ''; $('#wfcard').hidden = true; loadAlerts(); };
+    $('#voicenote').textContent = `Speech: ${vc.stt} → ${vc.tts}`;
+    tax.categories.forEach(c => { const o = el('option'); o.value = c.key; o.textContent = c.label; $('#cscat').appendChild(o); });
+    tax.localities.forEach(c => { const o = el('option'); o.value = c.key; o.textContent = c.label; $('#csloc').appendChild(o); });
+    renderChips();
+    await loadMerchant();
+    await loadAlerts();
+  } catch (e) {
+    $('#health').innerHTML = '<span class="err">API unreachable</span>';
+    $('#mcard').innerHTML = `<p class="err">Could not reach the API: ${esc(e.message)}</p>`;
+  }
+})();
+
+const DEMO = [
+  'Bhai, iss hafte sales kyun kam hain?',
+  'Is this just me or the whole area?',
+  '25 hazaar ka inventory kharid sakta hoon?',
+  'Kab next rush hoga?',
+  'Should I run a 30% discount?',
+  'Rate ₹10 badha doon toh?',
+  'Diwali ke liye kya stock karu?',
+  'Offer bana de'
+];
+function renderChips() {
+  const c = $('#chips'); c.innerHTML = '';
+  DEMO.forEach(q => { const b = el('button', 'chip', esc(q)); b.onclick = () => ask(q); c.appendChild(b); });
+}
+
+/* ---------------- merchant ---------------- */
+async function loadMerchant() {
+  const m = await api('/api/merchant/' + S.merchant);
+  const d = m.trend.delta_pct;
+  const tone = d <= -15 ? 'bad' : d < -5 ? 'warn' : 'good';
+  $('#mcard').innerHTML = `
+    <div class="mhead">
+      <div>
+        <div class="name">${esc(m.name)}</div>
+        <div class="meta">${esc(m.category)} · ${esc(m.locality)} · ${esc(m.pattern.replace('_', ' '))}</div>
+      </div>
+      <div class="delta ${tone}">${pct(d)}</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Daily avg</div><div class="v">${inr(m.trend.recent_avg)}</div></div>
+      <div class="kpi"><div class="k">Prev month</div><div class="v">${inr(m.trend.baseline_avg)}</div></div>
+      <div class="kpi"><div class="k">Avg bill</div><div class="v">${inr(m.avg_ticket)}</div></div>
+      <div class="kpi"><div class="k">Weakest slot</div><div class="v">${esc(m.worst_slot.slot)} ${pct(m.worst_slot.delta_pct)}</div></div>
+      <div class="kpi"><div class="k">Cash buffer</div><div class="v">${inr(m.cashflow.closing_buffer)}</div></div>
+      <div class="kpi"><div class="k">vs area</div><div class="v">${pct(m.locality_health.area_trend_pct)}</div></div>
+    </div>`;
+  drawGraph(); drawHours(m); drawDays(m); loadEvidence();
+}
+
+/* ---------------- ask ---------------- */
+function addTurn(who, cls, html) {
+  const t = $('#transcript');
+  if (t.querySelector('.empty')) t.innerHTML = '';
+  const n = el('div', 'turn ' + cls);
+  n.appendChild(el('div', 'who', who));
+  n.appendChild(el('div', 'bubble', html));
+  t.appendChild(n);
+  t.parentElement.scrollIntoView({ block: 'nearest' });
+  return n;
+}
+
+async function ask(text) {
+  if (!text || !text.trim()) return;
+  $('#q').value = '';
+  addTurn('Merchant', 'me', '“' + esc(text) + '”');
+  const pending = addTurn('Business Saathi', 'ai', '<span class="spin"></span>');
+  try {
+    const r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ merchant_id: S.merchant, text }) });
+    S.answer = r.answer;
+    pending.querySelector('.bubble').innerHTML = esc(r.answer.spoken) +
+      `<span class="intentpill">${esc(r.parsed.name)} · ${esc(r.parsed.family)} · ${(r.parsed.confidence * 100).toFixed(0)}%</span>`;
+    speak(r.answer.spoken);
+    renderAnswer(r.answer);
+  } catch (e) {
+    pending.querySelector('.bubble').innerHTML = `<span class="err">${esc(e.message)}</span>`;
+  }
+}
+$('#send').onclick = () => ask($('#q').value);
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter') ask($('#q').value); });
+
+/* ---------------- answer ---------------- */
+const SRC_ORDER = ['own_data', 'merchants_like_you', 'financial_position', 'area_wide'];
+function renderAnswer(a) {
+  const host = $('#answer'); host.innerHTML = '';
+  const wrap = el('div', 'quad');
+  const cards = a.cards.slice().sort((x, y) => SRC_ORDER.indexOf(x.source) - SRC_ORDER.indexOf(y.source));
+  cards.forEach(c => {
+    const n = el('div', 'qc tone-' + c.tone);
+    n.appendChild(el('div', 'qh', esc(c.title)));
+    n.appendChild(el('div', 'qb', esc(c.body)));
+    if (c.highlight) n.appendChild(el('div', 'qhl', esc(c.highlight)));
+    if (c.trace && c.trace.length) {
+      const d = el('details', 'trace');
+      d.appendChild(el('summary', null, '▸ how this was derived'));
+      d.appendChild(el('ul', null, c.trace.map(t => `<li>${esc(t)}</li>`).join('')));
+      n.appendChild(d);
+    }
+    wrap.appendChild(n);
+  });
+  host.appendChild(wrap);
+
+  if (a.simulation) host.appendChild(renderSim(a.simulation));
+
+  if (a.proposal) {
+    const p = a.proposal;
+    const box = el('div', 'prop');
+    box.innerHTML = `
+      <div class="eyebrow">Recommended action — needs your approval</div>
+      <div class="pl" style="margin-top:8px">${esc(p.label)}</div>
+      <div class="pe">${esc(p.evidence_line)} · median outcome ${pct(p.expected_gmv_delta_pct)} GMV</div>
+      <div class="confbar"><span style="width:${(p.confidence * 100).toFixed(0)}%"></span></div>
+      <div class="eyebrow" style="margin-top:6px">confidence ${(p.confidence * 100).toFixed(0)}% · discount sized to your own ₹ bill, not copied from a peer</div>
+      <div class="pa">
+        <button class="btn primary" id="approve">Approve — “Haan, bana do”</button>
+        <button class="btn ghost" id="decline">Not now</button>
+      </div>`;
+    host.appendChild(box);
+    box.querySelector('#approve').onclick = () => approve(p);
+    box.querySelector('#decline').onclick = () => { box.remove(); addTurn('Merchant', 'me', '“Abhi nahi.”'); };
+  }
+}
+
+function renderSim(s) {
+  const out = s.beyond_observed_range;
+  const box = el('div', 'card sim' + (out ? ' simwarn' : ''));
+  box.innerHTML = `
+    <div class="eyebrow" style="color:${out ? 'var(--warn)' : 'var(--accent)'}">
+      What-if simulation${out ? ' — outside the evidence' : ''}</div>
+    <div class="simrow">
+      <div class="simcell"><div class="k">Avg bill</div>
+        <div class="v">${inr(s.baseline_ticket)} → ${inr(s.projected_ticket)}</div>
+        <div class="n">${pct(s.price_shock_pct)} price change</div></div>
+      <div class="simcell"><div class="k">Daily transactions</div>
+        <div class="v">${s.baseline_txns} → ${s.projected_txns}</div>
+        <div class="n ${s.txn_response_pct < 0 ? 'neg' : 'pos'}">${pct(s.txn_response_pct)} volume</div></div>
+      <div class="simcell"><div class="k">Daily GMV</div>
+        <div class="v">${inr(s.baseline_daily_gmv)} → ${inr(s.projected_daily_gmv)}</div>
+        <div class="n ${s.delta_pct < 0 ? 'neg' : 'pos'}">${pct(s.delta_pct)}</div></div>
+    </div>
+    ${out ? `<p class="simnote">No similar merchant has tried a change this large — the biggest in the
+      graph is ${pct(s.max_observed_shock_pct)}. Beyond that point this is extrapolation, not
+      evidence, so volume loss is charged at near-unit elasticity and the projection is deliberately
+      pessimistic. A smaller step is the safer test.</p>`
+    : `<p class="simnote">Within the observed range: peers have tried changes up to
+      ${pct(s.max_observed_shock_pct)}, so this is interpolation from real outcomes.
+      Elasticity ${s.elasticity} — ${esc(s.elasticity_source)}.</p>`}`;
+  return box;
+}
+
+/* ---------------- approve -> workflow ---------------- */
+async function approve(p) {
+  $('#approve').disabled = true;
+  addTurn('Merchant', 'me', '“Haan.”');
+  const card = $('#wfcard'); card.hidden = false;
+  $('#wfsub').textContent = 'Execution workflow — triggered by your approval.';
+  $('#wfsteps').innerHTML = '<li class="st-running"><span class="dot"></span><span class="sl">Starting…</span></li>';
+  $('#wfresult').innerHTML = '';
+  $('#wftag').textContent = 'running'; $('#wftag').className = 'runtag';
+  try {
+    const run = await api('/api/approve', { method: 'POST', body: JSON.stringify({ merchant_id: S.merchant, proposal: p }) });
+    await animateSteps(run);
+    const r = run.result || {};
+    $('#wftag').textContent = run.status;
+    $('#wftag').className = 'runtag ' + run.status;
+    if (r.spoken) { addTurn('Business Saathi', 'ai', esc(r.spoken)); speak(r.spoken); }
+    if (r.graph_action_id) {
+      $('#wfresult').innerHTML = `<div class="eyebrow" style="margin-top:12px">Outcome ${esc(r.graph_action_id)} written back to the graph — the evidence base just grew.</div>`;
+      drawGraph(); loadEvidence();
+    }
+    $('#approve') && ($('#approve').textContent = 'Approved');
+  } catch (e) {
+    $('#wfresult').innerHTML = `<p class="err">${esc(e.message)}</p>`;
+    $('#wftag').textContent = 'error'; $('#wftag').className = 'runtag failed';
+  }
+}
+
+async function animateSteps(run) {
+  const ul = $('#wfsteps'); ul.innerHTML = '';
+  for (const s of run.steps) {
+    const li = el('li', 'st-' + s.status);
+    li.innerHTML = `<span class="dot"></span><div><div class="sl">${esc(s.label)}</div>` +
+      (s.detail || s.error ? `<div class="sd">${esc(s.detail || s.error)}</div>` : '') + `</div>`;
+    ul.appendChild(li);
+    if (s.status !== 'pending') await new Promise(r => setTimeout(r, 260));
+  }
+}
+
+/* ---------------- alerts ---------------- */
+$('#runmon').onclick = async () => {
+  const b = $('#runmon'); b.disabled = true; b.textContent = 'Scanning…';
+  try { await api('/api/monitor', { method: 'POST' }); await loadAlerts(); }
+  finally { b.disabled = false; b.textContent = 'Run monitoring'; }
+};
+
+async function loadAlerts() {
+  const all = await api('/api/alerts');
+  const mine = all.filter(a => a.merchant_id === S.merchant);
+  const host = $('#alerts'); host.innerHTML = '';
+  if (!mine.length) {
+    host.innerHTML = `<p class="empty">No alerts for this merchant.${all.length ? ` ${all.length} raised across the base.` : ' Run monitoring to scan.'}</p>`;
+    return;
+  }
+  mine.forEach(a => {
+    const n = el('div', 'alert');
+    n.appendChild(el('div', 'ah', a.kind.replace(/_/g, ' ') + ' — system initiated, unprompted'));
+    n.appendChild(el('p', null, '“' + esc(a.message) + '”'));
+    if (a.meta && a.meta.suggest_action) {
+      const bar = el('div', 'aa');
+      const b = el('button', 'btn primary', 'Yes, show me');
+      b.onclick = () => ask('Offer bana de');
+      bar.appendChild(b); n.appendChild(bar);
+    }
+    host.appendChild(n);
+  });
+}
+
+/* ---------------- voice ---------------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false;
+$('#mic').onclick = () => {
+  if (!SR) { $('#voicenote').innerHTML = '<span class="err">This browser has no speech recognition — type instead, or set SARVAM_API_KEY for server-side STT.</span>'; return; }
+  if (listening) { rec && rec.stop(); return; }
+  rec = new SR(); rec.lang = 'hi-IN'; rec.interimResults = true; rec.continuous = false;
+  rec.onstart = () => { listening = true; $('#mic').classList.add('live'); $('#voicenote').textContent = 'Listening… bolo.'; };
+  rec.onresult = e => {
+    const t = Array.from(e.results).map(r => r[0].transcript).join('');
+    $('#q').value = t;
+    if (e.results[e.results.length - 1].isFinal) { rec.stop(); ask(t); }
+  };
+  rec.onerror = e => { $('#voicenote').innerHTML = `<span class="err">Speech error: ${esc(e.error)}</span>`; };
+  rec.onend = () => { listening = false; $('#mic').classList.remove('live'); };
+  rec.start();
+};
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'hi-IN'; u.rate = 0.98;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch (e) { /* speech is a nicety, never a dependency */ }
+}
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => {
+      x.setAttribute('aria-selected', String(x === t));
+      $('#' + x.dataset.panel).hidden = x !== t;
+    });
+  };
+});
+
+/* ---------------- graph drawing ---------------- */
+async function drawGraph() {
+  const g = await api('/api/graph/' + S.merchant);
+  const svg = $('#gsvg'); svg.innerHTML = '';
+  const W = 720, H = 420, cx = 270, cy = 205;
+  const me = g.nodes.find(n => n.self) || g.nodes[0];
+  const peers = g.nodes.filter(n => n.kind === 'peer');
+  const act = g.nodes.find(n => n.kind === 'action');
+  const out = g.nodes.find(n => n.kind === 'outcome');
+  const pos = {}; pos[me.id] = [cx, cy];
+  peers.forEach((p, i) => {
+    const a = (i / peers.length) * Math.PI * 2 - Math.PI / 2;
+    const r = 118 + (i % 3) * 26;
+    pos[p.id] = [cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.82];
+  });
+  if (act) pos[act.id] = [520, 120];
+  if (out) pos[out.id] = [560, 300];
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const mk = (t, at) => { const n = document.createElementNS(ns, t); for (const k in at) n.setAttribute(k, at[k]); return n; };
+
+  g.edges.forEach(e => {
+    const a = pos[e.source], b = pos[e.target];
+    if (!a || !b) return;
+    const dashed = e.rel !== 'similar_to';
+    svg.appendChild(mk('line', {
+      x1: a[0], y1: a[1], x2: b[0], y2: b[1],
+      stroke: dashed ? '#00B4F0' : '#2A2E3A',
+      'stroke-width': dashed ? 1.6 : (0.6 + (e.weight || 0.5) * 1.6),
+      'stroke-dasharray': dashed ? '5 4' : 'none', opacity: dashed ? 0.9 : 0.75
+    }));
+  });
+
+  const node = (n, color, r, label, sub) => {
+    const [x, y] = pos[n.id];
+    svg.appendChild(mk('circle', { cx: x, cy: y, r, fill: color, stroke: '#0A0A0E', 'stroke-width': 2 }));
+    if (label) {
+      const t = mk('text', { x: x + r + 7, y: y + 3, fill: '#EDEFF3', 'font-size': 11.5,
+        'font-family': 'ui-monospace, monospace' });
+      t.textContent = label; svg.appendChild(t);
+    }
+    if (sub) {
+      // keep long labels inside the viewBox rather than letting them clip
+      const flip = x + r + 7 + sub.length * 6 > W - 8;
+      const t2 = mk('text', { x: flip ? x - r - 7 : x + r + 7, y: y + 17, fill: '#646B7A',
+        'font-size': 10, 'text-anchor': flip ? 'end' : 'start',
+        'font-family': 'ui-monospace, monospace' });
+      t2.textContent = sub; svg.appendChild(t2);
+    }
+  };
+  peers.forEach(p => node(p, '#5A6172', 5, '', ''));
+  if (act) node(act, '#E8913A', 6, act.label.replace(/_/g, ' '), act.sub);
+  if (out) node(out, '#3FC98A', 6, 'outcome', out.sub);
+  node(me, '#00B4F0', 10, me.label, me.sub);
+
+  const cap = mk('text', { x: 16, y: H - 14, fill: '#646B7A', 'font-size': 11,
+    'font-family': 'ui-monospace, monospace' });
+  cap.textContent = 'peers are aggregated and unnamed — the merchant never sees another shop’s numbers';
+  svg.appendChild(cap);
+  $('#gstats').textContent = `${g.stats.merchants} nodes · ${g.stats.relations} relations · ${g.stats.action_chains} action→outcome chains`;
+}
+
+/* ---------------- hourly chart ---------------- */
+function drawHours(m) {
+  const svg = $('#hsvg'); svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const mk = (t, at) => { const n = document.createElementNS(ns, t); for (const k in at) n.setAttribute(k, at[k]); return n; };
+  const W = 720, H = 320, pad = { l: 52, r: 14, t: 14, b: 40 };
+  fetch('/api/ask', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ merchant_id: S.merchant, text: 'business kaisa chal raha hai' })
+  }).then(r => r.json()).then(d => {
+    const rec = d.answer.charts.hourly, base = d.answer.charts.hourly_baseline;
+    const hours = Object.keys(rec).map(Number).sort((a, b) => a - b);
+    const max = Math.max(...hours.map(h => Math.max(rec[h] || 0, base[h] || 0)), 1);
+    const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+    const bw = iw / hours.length;
+    [0, .25, .5, .75, 1].forEach(f => {
+      const y = pad.t + ih - f * ih;
+      svg.appendChild(mk('line', { x1: pad.l, y1: y, x2: W - pad.r, y2: y, stroke: '#1F222C', 'stroke-width': 1 }));
+      const t = mk('text', { x: pad.l - 8, y: y + 4, fill: '#646B7A', 'font-size': 10, 'text-anchor': 'end',
+        'font-family': 'ui-monospace, monospace' });
+      t.textContent = '₹' + Math.round(max * f); svg.appendChild(t);
+    });
+    hours.forEach((h, i) => {
+      const x = pad.l + i * bw;
+      const hb = (base[h] || 0) / max * ih, hr = (rec[h] || 0) / max * ih;
+      svg.appendChild(mk('rect', { x: x + bw * .12, y: pad.t + ih - hb, width: bw * .38, height: hb, fill: '#3A4050', rx: 2 }));
+      svg.appendChild(mk('rect', { x: x + bw * .52, y: pad.t + ih - hr, width: bw * .38, height: hr, fill: '#00B4F0', rx: 2 }));
+      if (h % 2 === 0) {
+        const t = mk('text', { x: x + bw / 2, y: H - 20, fill: '#646B7A', 'font-size': 10, 'text-anchor': 'middle',
+          'font-family': 'ui-monospace, monospace' });
+        t.textContent = h; svg.appendChild(t);
+      }
+    });
+    const ws = m.worst_slot.slot;
+    const band = { evening: [18, 20], lunch: [12, 14], morning: [7, 10] }[ws];
+    if (band) {
+      const i0 = hours.indexOf(band[0]), i1 = hours.indexOf(band[1]);
+      if (i0 >= 0 && i1 >= 0) {
+        svg.appendChild(mk('rect', { x: pad.l + i0 * bw, y: pad.t, width: (i1 - i0 + 1) * bw, height: ih,
+          fill: '#E8913A', opacity: .07 }));
+        const t = mk('text', { x: pad.l + i0 * bw + 5, y: pad.t + 14, fill: '#E8913A', 'font-size': 10.5,
+          'font-family': 'ui-monospace, monospace' });
+        t.textContent = ws + ' ' + pct(m.worst_slot.delta_pct); svg.appendChild(t);
+      }
+    }
+    const xl = mk('text', { x: W / 2, y: H - 4, fill: '#646B7A', 'font-size': 10, 'text-anchor': 'middle',
+      'font-family': 'ui-monospace, monospace' });
+    xl.textContent = 'hour of day'; svg.appendChild(xl);
+  });
+}
+
+/* ---------------- daily chart ---------------- */
+function drawDays(m) {
+  const svg = $('#dsvg'); svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const mk = (t, at) => { const n = document.createElementNS(ns, t); for (const k in at) n.setAttribute(k, at[k]); return n; };
+  const data = m.charts.daily;
+  if (!data.length) return;
+  const W = 720, H = 300, pad = { l: 56, r: 14, t: 16, b: 34 };
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const max = Math.max(...data.map(d => d.gmv)) * 1.08;
+  const X = i => pad.l + (i / (data.length - 1)) * iw;
+  const Y = v => pad.t + ih - (v / max) * ih;
+  [0, .5, 1].forEach(f => {
+    const y = pad.t + ih - f * ih;
+    svg.appendChild(mk('line', { x1: pad.l, y1: y, x2: W - pad.r, y2: y, stroke: '#1F222C' }));
+    const t = mk('text', { x: pad.l - 8, y: y + 4, fill: '#646B7A', 'font-size': 10, 'text-anchor': 'end',
+      'font-family': 'ui-monospace, monospace' });
+    t.textContent = '₹' + Math.round(max * f).toLocaleString('en-IN'); svg.appendChild(t);
+  });
+  // baseline mean of the first 30 of the 45 shown
+  const early = data.slice(0, 30), mean = early.reduce((s, d) => s + d.gmv, 0) / early.length;
+  svg.appendChild(mk('line', { x1: pad.l, y1: Y(mean), x2: W - pad.r, y2: Y(mean),
+    stroke: '#3A4050', 'stroke-dasharray': '4 4' }));
+  const ml = mk('text', { x: W - pad.r, y: Y(mean) - 6, fill: '#9AA1AF', 'font-size': 10, 'text-anchor': 'end',
+    'font-family': 'ui-monospace, monospace' });
+  ml.textContent = 'baseline ' + inr(mean); svg.appendChild(ml);
+  svg.appendChild(mk('path', {
+    d: data.map((d, i) => (i ? 'L' : 'M') + X(i) + ' ' + Y(d.gmv)).join(' '),
+    fill: 'none', stroke: '#00B4F0', 'stroke-width': 1.9
+  }));
+  const last = data.length - 1;
+  svg.appendChild(mk('circle', { cx: X(last), cy: Y(data[last].gmv), r: 3.5, fill: '#00B4F0' }));
+  [0, Math.floor(data.length / 2), last].forEach(i => {
+    const t = mk('text', { x: X(i), y: H - 12, fill: '#646B7A', 'font-size': 10,
+      'text-anchor': i === 0 ? 'start' : i === last ? 'end' : 'middle',
+      'font-family': 'ui-monospace, monospace' });
+    t.textContent = data[i].day.slice(5); svg.appendChild(t);
+  });
+}
+
+/* ---------------- evidence table ---------------- */
+async function loadEvidence() {
+  const evs = await api('/api/evidence/' + S.merchant);
+  const t = $('#evtbl');
+  t.innerHTML = '<thead><tr><th>Action</th><th>Peers tried</th><th>Worked</th><th>Rate</th>' +
+    '<th>Median GMV</th><th>Retention 30d</th><th>Outcomes</th><th>Cohort</th></tr></thead>';
+  const tb = el('tbody');
+  evs.forEach(e => {
+    const r = el('tr');
+    const rate = e.success_rate;
+    r.innerHTML = `<td>${esc(e.action_type.replace(/_/g, ' '))}</td>
+      <td class="num">${e.peer_count}</td>
+      <td class="num">${e.success_count}</td>
+      <td class="num ${rate >= .6 ? 'pos' : rate <= .3 ? 'neg' : ''}">${(rate * 100).toFixed(0)}%</td>
+      <td class="num ${e.median_gmv_delta_pct > 0 ? 'pos' : 'neg'}">${pct(e.median_gmv_delta_pct)}</td>
+      <td class="num">${e.median_retention_pct == null ? '—' : e.median_retention_pct.toFixed(0) + '%'}</td>
+      <td class="mut">${esc(Object.entries(e.outcomes).map(([k, v]) => `${v}× ${k.replace(/_/g, ' ')}`).join(', '))}</td>
+      <td class="mut">${esc(e.cohort)}</td>`;
+    tb.appendChild(r);
+  });
+  t.appendChild(tb);
+}
+
+/* ---------------- cold start ---------------- */
+$('#csgo').onclick = async () => {
+  const out = $('#csout'); out.innerHTML = '<span class="spin"></span>';
+  try {
+    const d = await api('/api/cold-start', {
+      method: 'POST',
+      body: JSON.stringify({ category: $('#cscat').value, locality: $('#csloc').value, pattern: 'evening_heavy' })
+    });
+    const hrs = d.peak_hours.map(h => h + ':00').join(', ');
+    out.innerHTML = `
+      <div class="qc tone-positive">
+        <div class="qh">Day 1 — zero transaction history</div>
+        <div class="qb">
+          ${esc(d.category)}s in ${esc(d.locality)} peak at <strong>${esc(hrs)}</strong>.
+          Expected daily revenue in your first month: <strong>${inr(d.expected_daily_revenue[0])}–${inr(d.expected_daily_revenue[1])}</strong>.
+          ${d.proven_actions.length ? `The action with the strongest record here is
+            <strong>${esc(d.proven_actions[0].action_type.replace(/_/g, ' '))}</strong>
+            (${(d.proven_actions[0].success_rate * 100).toFixed(0)}% across ${d.proven_actions[0].n} attempts).` : ''}
+        </div>
+        <div class="qhl">inherited from ${d.cohort_size} similar merchants already in the graph</div>
+      </div>
+      <p class="sub" style="margin-top:12px">This is why Business Saathi is a reason to <em>join</em> Paytm,
+      not only a tool for merchants already on it.</p>`;
+  } catch (e) { out.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+};
+</script>
+</body>
+</html>

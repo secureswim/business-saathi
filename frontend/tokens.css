@@ -1,0 +1,26 @@
+/* Lifted from the pitch deck so the product and the pitch look like one thing.
+   A judge who watched the deck and then sees the app should not notice a seam. */
+:root{
+  --bg:#0B0B0E; --surface:#141419; --surface-2:#1A1A21; --line:#26262E;
+  --accent:#00BAF2;            /* Paytm blue. One accent, used sparingly. */
+  --accent-dim:#0a4d63;
+  --warn:#E8913A; --good:#3AD29F; --bad:#E4574C;
+  --text:#F2F2F4; --muted:#8A8A96;
+  --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans:"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);
+     -webkit-font-smoothing:antialiased}
+.label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+       text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button{font-family:var(--sans);cursor:pointer;border-radius:8px;border:1px solid var(--line);
+       background:var(--surface-2);color:var(--text);padding:8px 14px;font-size:13px}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#03212b;font-weight:600}
+button.primary:hover{color:#03212b;filter:brightness(1.08)}
+select,input{font-family:var(--sans);background:var(--surface-2);color:var(--text);
+             border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}

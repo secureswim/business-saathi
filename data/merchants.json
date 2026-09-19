@@ -1,0 +1,492 @@
+[
+  {
+    "id": "M-001",
+    "name": "Shree Momos & Chaat",
+    "category": "food_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 200,
+    "base_txns": 96,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 55.0
+  },
+  {
+    "id": "M-002",
+    "name": "Punjabi Rolls",
+    "category": "food_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 800,
+    "base_txns": 104,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 98.6
+  },
+  {
+    "id": "M-003",
+    "name": "Balaji Chai Point",
+    "category": "food_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 95,
+    "base_txns": 76,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 53.2
+  },
+  {
+    "id": "M-004",
+    "name": "Apna Kirana Mart",
+    "category": "food_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 340,
+    "base_txns": 109,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 94.1
+  },
+  {
+    "id": "M-005",
+    "name": "Sharma Chai Corner",
+    "category": "food_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 340,
+    "base_txns": 93,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 66.0
+  },
+  {
+    "id": "M-006",
+    "name": "Amul Chai Stall",
+    "category": "chai_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 500,
+    "base_txns": 368,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 25.4
+  },
+  {
+    "id": "M-007",
+    "name": "Tandoori Junction",
+    "category": "chai_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 500,
+    "base_txns": 323,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 27.6
+  },
+  {
+    "id": "M-008",
+    "name": "Glow Unisex Salon",
+    "category": "chai_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 340,
+    "base_txns": 222,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 12.2
+  },
+  {
+    "id": "M-009",
+    "name": "Delhi Chaat Bhandar",
+    "category": "chai_stall",
+    "locality": "sector-62-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 800,
+    "base_txns": 300,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 17.1
+  },
+  {
+    "id": "M-010",
+    "name": "QuickFix Mobiles",
+    "category": "chai_stall",
+    "locality": "sector-62-noida",
+    "pattern": "lunch_heavy",
+    "opened_days_ago": 95,
+    "base_txns": 222,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 19.0
+  },
+  {
+    "id": "M-011",
+    "name": "Mobile Care Point",
+    "category": "chai_stall",
+    "locality": "sector-62-noida",
+    "pattern": "lunch_heavy",
+    "opened_days_ago": 800,
+    "base_txns": 306,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 20.8
+  },
+  {
+    "id": "M-012",
+    "name": "Bombay Vada Pav",
+    "category": "food_stall",
+    "locality": "sector-62-noida",
+    "pattern": "lunch_heavy",
+    "opened_days_ago": 95,
+    "base_txns": 78,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 49.3
+  },
+  {
+    "id": "M-013",
+    "name": "Sector Snacks",
+    "category": "food_stall",
+    "locality": "sector-62-noida",
+    "pattern": "lunch_heavy",
+    "opened_days_ago": 800,
+    "base_txns": 134,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 67.2
+  },
+  {
+    "id": "M-014",
+    "name": "Chai Sutta Adda",
+    "category": "food_stall",
+    "locality": "sector-62-noida",
+    "pattern": "lunch_heavy",
+    "opened_days_ago": 800,
+    "base_txns": 127,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 98.7
+  },
+  {
+    "id": "M-015",
+    "name": "Nehru Provision Store",
+    "category": "kirana",
+    "locality": "sector-62-noida",
+    "pattern": "steady",
+    "opened_days_ago": 95,
+    "base_txns": 49,
+    "ticket": [
+      80,
+      600
+    ],
+    "ticket_mean": 158.9
+  },
+  {
+    "id": "M-016",
+    "name": "Jai Mata Di Store",
+    "category": "kirana",
+    "locality": "sector-62-noida",
+    "pattern": "steady",
+    "opened_days_ago": 500,
+    "base_txns": 39,
+    "ticket": [
+      80,
+      600
+    ],
+    "ticket_mean": 228.5
+  },
+  {
+    "id": "M-017",
+    "name": "Gupta Tea Stall",
+    "category": "chai_stall",
+    "locality": "lajpat-nagar",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 200,
+    "base_txns": 347,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 18.8
+  },
+  {
+    "id": "M-018",
+    "name": "Verma General Store",
+    "category": "chai_stall",
+    "locality": "lajpat-nagar",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 95,
+    "base_txns": 250,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 22.3
+  },
+  {
+    "id": "M-019",
+    "name": "Gadget Clinic",
+    "category": "food_stall",
+    "locality": "lajpat-nagar",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 800,
+    "base_txns": 118,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 25.2
+  },
+  {
+    "id": "M-020",
+    "name": "New Look Hair Care",
+    "category": "food_stall",
+    "locality": "lajpat-nagar",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 200,
+    "base_txns": 112,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 45.7
+  },
+  {
+    "id": "M-021",
+    "name": "Rajdhani Kirana",
+    "category": "food_stall",
+    "locality": "lajpat-nagar",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 120,
+    "base_txns": 105,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 31.8
+  },
+  {
+    "id": "M-022",
+    "name": "Style Studio Salon",
+    "category": "kirana",
+    "locality": "lajpat-nagar",
+    "pattern": "steady",
+    "opened_days_ago": 500,
+    "base_txns": 29,
+    "ticket": [
+      80,
+      600
+    ],
+    "ticket_mean": 196.9
+  },
+  {
+    "id": "M-023",
+    "name": "Tea Break",
+    "category": "kirana",
+    "locality": "lajpat-nagar",
+    "pattern": "steady",
+    "opened_days_ago": 200,
+    "base_txns": 32,
+    "ticket": [
+      80,
+      600
+    ],
+    "ticket_mean": 359.4
+  },
+  {
+    "id": "M-024",
+    "name": "Krishna Kirana",
+    "category": "salon",
+    "locality": "lajpat-nagar",
+    "pattern": "steady",
+    "opened_days_ago": 500,
+    "base_txns": 17,
+    "ticket": [
+      150,
+      700
+    ],
+    "ticket_mean": 329.6
+  },
+  {
+    "id": "M-025",
+    "name": "Cut & Style",
+    "category": "salon",
+    "locality": "lajpat-nagar",
+    "pattern": "steady",
+    "opened_days_ago": 120,
+    "base_txns": 35,
+    "ticket": [
+      150,
+      700
+    ],
+    "ticket_mean": 321.5
+  },
+  {
+    "id": "M-026",
+    "name": "Sai Snacks",
+    "category": "food_stall",
+    "locality": "karol-bagh",
+    "pattern": "lunch_heavy",
+    "opened_days_ago": 340,
+    "base_txns": 77,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 82.4
+  },
+  {
+    "id": "M-027",
+    "name": "Ganesh Store",
+    "category": "food_stall",
+    "locality": "karol-bagh",
+    "pattern": "lunch_heavy",
+    "opened_days_ago": 340,
+    "base_txns": 70,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 94.2
+  },
+  {
+    "id": "M-028",
+    "name": "Hot Chowmein Center",
+    "category": "kirana",
+    "locality": "karol-bagh",
+    "pattern": "morning_heavy",
+    "opened_days_ago": 500,
+    "base_txns": 59,
+    "ticket": [
+      80,
+      600
+    ],
+    "ticket_mean": 92.4
+  },
+  {
+    "id": "M-029",
+    "name": "Shree Momos",
+    "category": "kirana",
+    "locality": "karol-bagh",
+    "pattern": "morning_heavy",
+    "opened_days_ago": 500,
+    "base_txns": 25,
+    "ticket": [
+      80,
+      600
+    ],
+    "ticket_mean": 347.5
+  },
+  {
+    "id": "M-030",
+    "name": "Merchant 30",
+    "category": "mobile_repair",
+    "locality": "karol-bagh",
+    "pattern": "steady",
+    "opened_days_ago": 800,
+    "base_txns": 9,
+    "ticket": [
+      200,
+      1800
+    ],
+    "ticket_mean": 760.1
+  },
+  {
+    "id": "M-031",
+    "name": "Merchant 31",
+    "category": "mobile_repair",
+    "locality": "karol-bagh",
+    "pattern": "steady",
+    "opened_days_ago": 500,
+    "base_txns": 7,
+    "ticket": [
+      200,
+      1800
+    ],
+    "ticket_mean": 852.4
+  },
+  {
+    "id": "M-032",
+    "name": "Merchant 32",
+    "category": "chai_stall",
+    "locality": "sector-18-noida",
+    "pattern": "morning_heavy",
+    "opened_days_ago": 500,
+    "base_txns": 268,
+    "ticket": [
+      15,
+      45
+    ],
+    "ticket_mean": 26.1
+  },
+  {
+    "id": "M-033",
+    "name": "Merchant 33",
+    "category": "food_stall",
+    "locality": "sector-18-noida",
+    "pattern": "evening_heavy",
+    "opened_days_ago": 95,
+    "base_txns": 93,
+    "ticket": [
+      40,
+      160
+    ],
+    "ticket_mean": 34.6
+  },
+  {
+    "id": "M-034",
+    "name": "Merchant 34",
+    "category": "salon",
+    "locality": "sector-18-noida",
+    "pattern": "steady",
+    "opened_days_ago": 500,
+    "base_txns": 29,
+    "ticket": [
+      150,
+      700
+    ],
+    "ticket_mean": 387.5
+  },
+  {
+    "id": "M-035",
+    "name": "Merchant 35",
+    "category": "mobile_repair",
+    "locality": "sector-18-noida",
+    "pattern": "steady",
+    "opened_days_ago": 200,
+    "base_txns": 15,
+    "ticket": [
+      200,
+      1800
+    ],
+    "ticket_mean": 714.1
+  }
+]

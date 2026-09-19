@@ -1,0 +1,264 @@
+{
+  "name": "saathi-outcome-learning",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "saathi/measure",
+        "responseMode": "lastNode"
+      },
+      "id": "measure-webhook",
+      "name": "Measure webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || $input.first().json;\nreturn [{json: {run_id: b.run_id, force: b.force ?? null}}];"
+      },
+      "id": "read-run",
+      "name": "Read run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/measure-outcome",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 2,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($json.run_id) }}, \"force\": {{ JSON.stringify($json.force) }}}"
+      },
+      "id": "measure-outcome-simulated",
+      "name": "Measure outcome SIMULATED",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -200,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// the API classifies; this node makes the rule visible on the canvas\nconst d = $json;\nconst verdict = d.delta_pct > 8 ? 'recovered'\n  : (d.delta_pct > -5 ? 'no_change' : 'worse');\nreturn [{json: {...d, verdict_check: verdict,\n  run_id: $('Read run').item.json.run_id}}];"
+      },
+      "id": "classify",
+      "name": "Classify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/graph/writeback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 3,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($json.run_id) }}}"
+      },
+      "id": "graph-write-back",
+      "name": "Graph write-back",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/workflow-node",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 1,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Classify').item.json.run_id) }}, \"node\": \"learning complete\", \"status\": \"success\"}"
+      },
+      "id": "notify-learned",
+      "name": "Notify learned",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pennsylvania-arab-ist-scored.trycloudflare.com/api/internal/workflow-node",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Saathi-Secret",
+              "value": "saathi-demo-secret"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "retry": {
+              "maxTries": 1,
+              "waitBetweenTries": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"run_id\": {{ JSON.stringify($('Read run').item.json.run_id) }}, \"node\": \"measure\", \"status\": \"failed\", \"detail\": \"outcome could not be measured\"}"
+      },
+      "id": "outcome-unavailable",
+      "name": "Outcome unavailable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        460
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Measure webhook": {
+      "main": [
+        [
+          {
+            "node": "Read run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read run": {
+      "main": [
+        [
+          {
+            "node": "Measure outcome SIMULATED",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Measure outcome SIMULATED": {
+      "main": [
+        [
+          {
+            "node": "Classify",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Outcome unavailable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify": {
+      "main": [
+        [
+          {
+            "node": "Graph write-back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph write-back": {
+      "main": [
+        [
+          {
+            "node": "Notify learned",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Outcome unavailable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
