@@ -34,14 +34,39 @@ def test_fabricated_figure_is_caught():
     ok, unbacked = validator.validate(
         "Sales 63% neeche hain aur 912 naye customers aaye.", _evidence())
     assert not ok
-    assert 63.0 in unbacked or 912.0 in unbacked
+    values = {u["value"] for u in unbacked}
+    assert 63.0 in values or 912.0 in values
 
 
 def test_internal_merchant_identifier_is_caught_even_when_number_is_small():
     ok, unbacked = validator.validate(
         "Similar shops include M004 and M008.", _evidence())
     assert not ok
-    assert "M004" in unbacked and "M008" in unbacked
+    values = {u["value"] for u in unbacked}
+    assert "M004" in values and "M008" in values
+
+
+def test_durations_and_clock_times_are_not_business_claims():
+    """The old gate checked every numeral, so "teen din" and "6 baje" counted
+    as fabricated figures and threw away a perfectly good answer."""
+    ok, unbacked = validator.validate(
+        "Sales 14.7% neeche hain. Teen din mein pata chalega, shaam 6 baje se "
+        "9 baje tak sabse zyada bikri hoti hai.", _evidence())
+    assert ok, unbacked
+
+
+def test_a_figure_from_the_merchants_own_question_is_grounded():
+    ok, _ = validator.validate(
+        "Haan, 50,000 nikal sakte hain.", _evidence(),
+        question="kya main 50000 ka payment kar sakta hoon")
+    assert ok
+
+
+def test_a_figure_the_merchant_stated_is_grounded():
+    ok, _ = validator.validate(
+        "60 bottles bache hain.", _evidence(),
+        stated=[{"value_num": 60.0}])
+    assert ok
 
 
 def test_every_intent_passes_the_validator_end_to_end():
@@ -54,7 +79,11 @@ def test_every_intent_passes_the_validator_end_to_end():
         assert r["answer"]["validator"]["passed"], (q, r["answer"]["validator"])
 
 
-def test_unknown_intent_asks_rather_than_guessing():
-    r = engine.ask(config.DEMO_MERCHANT, "aaj mausam kaisa hai")
-    assert r["intent"] == "unknown"
-    assert validator.extract_numbers(r["answer"]["hinglish"]) == []
+def test_an_unanswerable_question_is_honest_and_does_not_loop():
+    """It used to ask "sales ya paise?" -- a clarify loop for a question the
+    merchant had already asked clearly. Now it says what it cannot see."""
+    r = engine.ask(config.DEMO_MERCHANT, "mera profit kitna hai")
+    text = r["answer"]["hinglish"].lower()
+    assert "ya paise ke baare mein" not in text
+    assert any(w in text for w in ("nahi", "payments"))
+    assert r["answer"]["validator"]["passed"]

@@ -15,6 +15,7 @@ from backend.actions.guardrails import validate as validate_guardrails  # noqa: 
 from backend.actions.orchestrator import get_orchestrator  # noqa: E402
 from backend.api.ws import broadcast  # noqa: E402
 from backend.data import context as ctx, db, repository as repo  # noqa: E402
+from backend.reasoning import conversation  # noqa: E402
 from backend.graph.store import get_store  # noqa: E402
 from backend.models.events import event  # noqa: E402
 from backend.reasoning import engine  # noqa: E402
@@ -29,7 +30,11 @@ async def query(request: Request):
     body = await request.json()
     merchant_id = (body.get("merchant_id") or config.DEMO_MERCHANT).strip()
     text = (body.get("text") or "").strip()
-    conversation_id = str(body.get("conversation_id") or "")[:128] or None
+    # A conversation id is now load-bearing rather than optional: it is how a
+    # follow-up finds the thread it belongs to. One is minted if the caller did
+    # not send one, and returned so the client can keep using it.
+    conversation_id = (str(body.get("conversation_id") or "")[:128]
+                       or conversation.new_id())
 
     if not text:
         return JSONResponse({"error": "empty_question"}, status_code=400)
@@ -163,11 +168,13 @@ async def store_context(request: Request):
         body.get("value_num"), body.get("value_text"), body.get("unit"))
     broadcast(event("context_stored", None, merchant_id=merchant_id, fact=stored))
 
-    recomputed = None
-    if body.get("rerun"):
-        recomputed = await asyncio.to_thread(engine.ask, merchant_id, body["rerun"],
-                                             broadcast, None, None, "context")
-    return {"stored": True, **stored, "recomputed": recomputed}
+    # NOTE: this endpoint no longer re-runs the previous question. It used to,
+    # and that is why answering a question produced the same answer again minus
+    # the question: the reply was stored as a fact and the ORIGINAL question was
+    # asked a second time with no conversation. A reply is now just another
+    # turn -- the client posts it to /api/query and the agent resolves it
+    # against the thread. This endpoint remains for /ops and direct fact entry.
+    return {"stored": True, **stored}
 
 
 # ------------------------------------------------------------------- actions
@@ -304,7 +311,8 @@ def health():
     except Exception:      # noqa: BLE001
         pass
     checks["orchestrator"] = get_orchestrator().name is not None
-    from backend.reasoning.llm import get_reasoner
-    checks["reasoner"] = get_reasoner().name is not None
+    from backend.reasoning import providers
+    checks["reasoner"] = True          # the agent always has an answer path
+    checks["llm_provider"] = providers.order() or ["offline"]
     checks["voice"] = get_voice().name is not None
     return {"ok": all(checks.values()), **checks, "adapters": config.adapters()}

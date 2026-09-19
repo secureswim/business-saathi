@@ -53,3 +53,25 @@ test('speech cancellation settles its promise and returns control',async()=>{
   const h=harness();h.context.window.speechSynthesis={cancel(){},speak(){}};h.context.SpeechSynthesisUtterance=class{};
   const speech=h.run("speak('hello')");h.run('stopSpeaking()');assert.equal(await speech,false);
 });
+
+// --- spoken numbers --------------------------------------------------------
+test('numbers are spoken in Hindi, not read out in English', () => {
+  const h = harness();
+  assert.match(h.run("speakableHindi('Rs 5,497 ka business hua')"),
+               /paanch hazaar chaar sau sataanve rupaye/);
+  assert.match(h.run("speakableHindi('Rs 1,25,000 ka payment')"),
+               /ek lakh pachchees hazaar/);
+});
+
+test('a decimal is spoken, never silently rounded', () => {
+  // the figure on the screen and the figure in the merchant's ear must match
+  const h = harness();
+  assert.match(h.run("speakableHindi('Sales 17.9% neeche hain')"),
+               /satrah point nau percent/);
+});
+
+test('durations and small counts are left alone', () => {
+  const h = harness();
+  assert.equal(h.run("speakableHindi('Teen din mein 60 bottles')"),
+               'Teen din mein 60 bottles');
+});

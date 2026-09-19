@@ -51,21 +51,18 @@ def test_evidence_sent_to_synthesis_carries_no_peer_ids():
             assert "peer_ids" not in ev["value"]
 
 
-def test_llm_payload_omits_ops_provenance(monkeypatch):
-    from backend.reasoning import llm
-    from backend.models.evidence import Evidence
+def test_the_model_never_sees_ops_provenance(scripted):
+    """The agent hands the model each tool's `value` and nothing else.
 
-    captured = {}
-    def fake(system, prompt, schema, max_tokens, timeout):
-        captured.update(json.loads(prompt))
-        return {"hinglish": "Saat similar merchants ka aggregate mila.",
-                "english": "An aggregate of seven similar merchants was available.",
-                "evidence_refs": ["get_peer_cohort"], "confidence": "high",
-                "limitations": [], "_provider": "test"}
-    monkeypatch.setattr(llm, "_llm_json", fake)
-    monkeypatch.setattr(config, "GEMINI_API_KEY", "test")
-    evidence = [Evidence("get_peer_cohort", {"cohort_size": 7},
-                         {"peers": [{"id": "M004"}]}, "graph")]
-    llm.GeminiReasoner().synthesize("peer_insight", "peers?", evidence)
-    blob = json.dumps(captured)
-    assert "basis" not in blob and "M004" not in blob
+    `basis` is where peer identifiers live so /ops can draw the cohort. If it
+    ever reached the model, the model could repeat a merchant id out loud."""
+    llm = scripted([
+        [("get_peer_cohort", {})],
+        {"final": {"hinglish": "Aapke jaise dukaanon ka data mil gaya.",
+                   "english": "I have the cohort.", "confidence": "high"}},
+    ])
+    r = engine.ask(config.DEMO_MERCHANT, "mere jaise shops mein kya chal raha hai")
+    blob = json.dumps(llm.seen, default=str)
+    assert "M004" not in blob and "M008" not in blob
+    assert "peer_ids" not in blob
+    assert r["answer"]["validator"]["passed"], r["answer"]["validator"]

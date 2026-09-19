@@ -98,13 +98,28 @@ def test_simulate_campaign_is_idempotent_and_labelled():
     assert a["campaign_id"] == b["campaign_id"]
 
 
-def test_context_stores_and_reruns():
+def test_context_stores_a_stated_fact():
+    """Storing a fact no longer re-runs the previous question.
+
+    It used to, and that is the bug behind "the answer just repeats itself":
+    the merchant's reply was filed and then the ORIGINAL question was asked
+    again, with no conversation attached, so the same answer came back minus
+    the question. A reply is now an ordinary turn on /api/query."""
     r = client.post("/api/context", json={
         "merchant_id": "M001", "kind": "stock_estimate", "subject": "cold drink",
-        "utterance": "bees pachees bottle",
-        "rerun": "cold drink ka stock dekh kar agle hafte ke liye kya prepare karun"}).json()
+        "utterance": "bees pachees bottle"}).json()
     assert r["stored"] and r["value_num"] == 22.5
-    assert "aapne bataya" in r["recomputed"]["answer"]["hinglish"]
+    assert "recomputed" not in r
+
+
+def test_query_mints_and_returns_a_conversation_id():
+    first = client.post("/api/query", json={"merchant_id": "M001",
+                                            "text": "aaj kitna business hua"}).json()
+    assert first["conversation_id"]
+    second = client.post("/api/query", json={
+        "merchant_id": "M001", "text": "aur kal?",
+        "conversation_id": first["conversation_id"]}).json()
+    assert second["conversation_id"] == first["conversation_id"]
 
 
 def test_merchants_and_graph_reads():
@@ -126,13 +141,12 @@ def test_the_event_sequence_is_emitted_and_persisted():
                                         "text": "sales kyun kam hain"}).json()
     events = client.get(f"/api/evidence/{d['query_id']}").json()["events"]
     seen = [e["type"] for e in events]
-    for expected in ("query_started", "intent_detected", "context_loaded",
-                     "tool_started", "tool_result", "evidence_complete",
-                     "reasoning_started", "validation_result", "response_ready"):
+    for expected in ("query_started", "context_loaded", "tool_result",
+                     "validation_result", "response_ready"):
         assert expected in seen, (expected, seen)
     # the pipeline is emitted in order
-    assert seen.index("query_started") < seen.index("intent_detected")
-    assert seen.index("evidence_complete") < seen.index("response_ready")
+    assert seen.index("query_started") < seen.index("context_loaded")
+    assert seen.index("context_loaded") < seen.index("response_ready")
 
 
 def test_pages_render():

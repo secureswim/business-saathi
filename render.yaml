@@ -9,6 +9,19 @@ services:
     envVars:
       - key: SAATHI_HOST
         value: 0.0.0.0
+      # The agent needs a model key. Left unset here on purpose -- a key in a
+      # blueprint is a key in git. Set it in the dashboard; until you do, the
+      # service still answers through the deterministic offline path.
+      - key: SAATHI_REAL_LLM
+        value: "1"
+      - key: SAATHI_LLM_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SAATHI_REAL_SARVAM
+        value: "0"
+      - key: SARVAM_API_KEY
+        sync: false
       - key: SAATHI_SITE_PASSWORD
         generateValue: true
       - key: SAATHI_INTERNAL_SECRET

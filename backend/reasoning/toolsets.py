@@ -65,7 +65,22 @@ TOOLSETS: dict[str, dict[str, list[str]]] = {
         "wave1": ["get_merchant_context"],
         "wave2": ["get_cohort_profile"],
     },
-    "unknown": {"wave1": [], "wave2": []},
+    "sales_lookup": {
+        "wave1": ["get_merchant_context", "sales_lookup"],
+        "wave2": [],
+    },
+    "period_compare": {
+        "wave1": ["get_merchant_context", "compare_periods"],
+        "wave2": [],
+    },
+    "afford_check": {
+        "wave1": ["get_merchant_context", "afford_check"],
+        "wave2": [],
+    },
+    "help": {"wave1": [], "wave2": []},
+    # `unknown` still loads health, so the honest "I can't see that" answer can
+    # at least offer the merchant something real instead of a clarify loop.
+    "unknown": {"wave1": ["get_merchant_context", "get_business_health"], "wave2": []},
 }
 
 # intents that may end in an action proposal
@@ -89,7 +104,8 @@ WAVE1 = {
     "get_merchant_context", "get_business_health", "get_sales_trend",
     "get_time_patterns", "get_recent_situations", "get_peer_cohort",
     "get_demand_forecast", "get_money_position", "get_optional_stock_context",
-    "get_action_history",
+    "get_action_history", "sales_lookup", "compare_periods", "afford_check",
+    "stock_cover", "calculate", "remember_fact",
 }
 WAVE2 = {
     "get_peer_relative_anomaly", "get_peer_playbook", "get_failed_plays",

@@ -60,3 +60,60 @@ def _require_db():
                     leftover.unlink()
             except OSError:
                 pass       # a stray temp file is not worth failing a run over
+
+
+# ---------------------------------------------------------------------------
+# Scripted model, so the agent loop is testable without a network or a key.
+#
+# A test hands over a list of rounds. Each round is either a list of tool calls
+# the model "decides" to make, or a final answer. The loop, the tool execution,
+# the grounding gate and the repair path are all exercised for real -- the only
+# thing faked is the model's choice, which is exactly the part a test should
+# be pinning anyway.
+# ---------------------------------------------------------------------------
+class ScriptedLLM:
+    def __init__(self, rounds):
+        self.rounds = list(rounds)
+        self.seen = []          # every message list the "model" was shown
+        self.calls = []         # every tool the script asked for
+        self.turns = 0
+
+    def __call__(self, messages, tools=None, **kwargs):
+        self.turns += 1
+        self.seen.append(messages)
+        if not self.rounds:
+            return {"provider": "scripted", "text": "", "calls": [
+                {"id": "z", "name": "final_answer", "arguments": {
+                    "hinglish": "Theek hai.", "english": "Okay.",
+                    "confidence": "low"}}]}
+        step = self.rounds.pop(0)
+        if isinstance(step, dict) and "final" in step:
+            return {"provider": "scripted", "text": "", "calls": [
+                {"id": f"f{self.turns}", "name": "final_answer",
+                 "arguments": step["final"]}]}
+        if isinstance(step, dict) and "text" in step:
+            return {"provider": "scripted", "text": step["text"], "calls": []}
+        calls = [{"id": f"c{i}", "name": name, "arguments": args}
+                 for i, (name, args) in enumerate(step)]
+        self.calls.extend((c["name"], c["arguments"]) for c in calls)
+        return {"provider": "scripted", "text": "", "calls": calls}
+
+    def tools_called(self):
+        return [name for name, _ in self.calls]
+
+    def args_for(self, name):
+        return next((a for n, a in self.calls if n == name), None)
+
+
+@pytest.fixture
+def scripted(monkeypatch):
+    """Install a scripted model and return the harness."""
+    from backend.reasoning import providers
+
+    def install(rounds):
+        llm = ScriptedLLM(rounds)
+        monkeypatch.setattr(providers, "chat", llm)
+        monkeypatch.setattr(providers, "available", lambda: True)
+        return llm
+
+    return install

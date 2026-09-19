@@ -8,11 +8,15 @@ from __future__ import annotations
 import time
 from typing import Any
 
-# --- the twelve-stage pipeline trace rendered in column 1 of /ops -----------
+# --- the pipeline trace rendered in column 1 of /ops -----------------------
+# `agent_round` replaces the single `intent_detected` step: there is no longer
+# one routing decision to show, there are N rounds of the model choosing tools
+# and looking at what came back.
 PIPELINE_STAGES = [
-    "query_started", "stt_complete", "intent_detected", "context_loaded",
-    "tool_started", "graph_retrieval", "evidence_complete", "reasoning_started",
-    "validation_result", "response_ready", "tts_started", "learning_complete",
+    "query_started", "stt_complete", "context_loaded", "reasoning_started",
+    "agent_round", "tool_started", "graph_retrieval", "evidence_complete",
+    "grounding_repair", "validation_result", "response_ready", "tts_started",
+    "learning_complete",
 ]
 
 # --- events the merchant route cares about ---------------------------------
@@ -26,6 +30,9 @@ ALL_EVENTS = [
     "action_proposed", "approval_received", "workflow_started", "workflow_node",
     "outcome_measured", "graph_writeback", "learning_complete",
     "proactive_alert", "context_stored", "reset",
+    # agent-era
+    "agent_round", "grounding_repair", "provider_failed", "voice_rejected",
+    "fact_remembered",
 ]
 
 

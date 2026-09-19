@@ -157,6 +157,64 @@ function stopSpeaking() {
   if(window.speechSynthesis)window.speechSynthesis.cancel();utterance=null;
   if(finishSpeech){const finish=finishSpeech;finishSpeech=null;finish(false);}
 }
+// --- speech: say numbers the way a Hindi speaker says them -----------------
+// A hi-IN voice reads "5497" as "five thousand four hundred ninety-seven" in
+// English, which is jarring mid-Hinglish. Indian grouping (lakh, hazaar) also
+// differs from the Western one, so this spells the figure out rather than
+// leaving it to the voice engine. The CAPTION keeps the digits -- only the
+// spoken string is rewritten.
+// Hindi numbers 0-99 are irregular -- 25 is "pachchees", not "paanch-bees" --
+// so they are spelled out rather than composed.
+const HI_100=('zero ek do teen chaar paanch chhe saat aath nau das gyarah barah terah '+
+  'chaudah pandrah solah satrah atharah unnees bees ikkees baees teees chaubees '+
+  'pachchees chhabbees sattaees atthaees unattees tees ikattees battees taintees '+
+  'chauntees paintees chhattees saintees adhtees untaalees chalees iktaalees '+
+  'bayaalees taintaalees chauvaalees paintaalees chhiyaalees saintaalees adtaalees '+
+  'unchaas pachaas ikyaavan baavan tirepan chauvan pachpan chhappan sattavan '+
+  'atthaavan unsaath saath iksaath baasath tirsath chausath painsath chhiyasath '+
+  'sarsath adsath unhattar sattar ikhattar bahattar tihattar chauhattar pachhattar '+
+  'chhihattar sathattar athhattar unyaasi assi ikyaasi bayaasi tirhaasi chauraasi '+
+  'pachaasi chhiyaasi sataasi athaasi navaasi nabbe ikyaanve baanve tiraanve '+
+  'chauraanve pachaanve chhiyaanve sataanve athaanve ninyaanve').split(' ');
+function hiTwo(n){return HI_100[n]||String(n);}
+function hiNumber(n){
+  n=Math.round(n);
+  if(n===0)return 'zero';
+  if(n<0)return 'minus '+hiNumber(-n);
+  const parts=[];
+  const crore=Math.floor(n/10000000); n%=10000000;
+  const lakh=Math.floor(n/100000);    n%=100000;
+  const hazaar=Math.floor(n/1000);    n%=1000;
+  const sau=Math.floor(n/100);        n%=100;
+  if(crore)parts.push(`${hiNumber(crore)} crore`);
+  if(lakh)parts.push(`${hiTwo(lakh)} lakh`);
+  if(hazaar)parts.push(`${hiTwo(hazaar)} hazaar`);
+  if(sau)parts.push(`${hiTwo(sau)} sau`);
+  if(n)parts.push(hiTwo(n));
+  return parts.join(' ');
+}
+function hiDecimal(raw){
+  const value=parseFloat(String(raw).replace(/,/g,''));
+  if(Number.isInteger(value))return hiNumber(value);
+  // keep the decimal rather than rounding: the figure on screen and the figure
+  // spoken aloud must be the same number
+  const [whole,frac]=String(value).split('.');
+  return `${hiNumber(parseFloat(whole))} point ${frac.split('').map(d=>HI_100[+d]).join(' ')}`;
+}
+function speakableHindi(text){
+  return String(text==null?'':text)
+    // "Rs 5,497" / "₹5497" -> "paanch hazaar chaar sau saat-nabbe rupaye"
+    .replace(/(?:₹|\bRs\.?|\bINR)\s*([\d,]+(?:\.\d+)?)/gi,
+      (_,d)=>`${hiDecimal(d)} rupaye`)
+    // "17.9%" -> "sattar-das point nau percent" is worse than leaving the
+    // decimal, so round percentages for speech
+    .replace(/([\d,]+(?:\.\d+)?)\s*%/g,
+      (_,d)=>`${hiDecimal(d)} percent`)
+    // a bare 4+ digit figure that survived the two rules above
+    .replace(/(?<![\w.])(\d{1,3}(?:,\d{2,3})+|\d{4,})(?![\w.])/g,
+      d=>hiDecimal(d));
+}
+
 function speak(text,{remember=true,label='SAATHI KA JAWAAB'}={}) {
   stopSpeaking();stopListening();const generation=speechGeneration;
   lastSpoken=text;if(remember)lastAnswer=text;caption(text,label);
@@ -168,7 +226,7 @@ function speak(text,{remember=true,label='SAATHI KA JAWAAB'}={}) {
     const browserVoice=()=>{
       if(generation!==speechGeneration)return;
       if(!window.speechSynthesis||volume===0){done(true);return;}
-      utterance=new SpeechSynthesisUtterance(text);utterance.lang='hi-IN';utterance.rate=.98;utterance.volume=volume;
+      utterance=new SpeechSynthesisUtterance(speakableHindi(text));utterance.lang='hi-IN';utterance.rate=.98;utterance.volume=volume;
       utterance.onstart=started;utterance.onend=()=>done(true);utterance.onerror=()=>done(true);
       // Some embedded browsers expose speech synthesis but never start playback.
       timer=setTimeout(()=>{if(generation!==speechGeneration)return;stopSpeaking();setMode('idle','Audio unavailable · Jawab screen par hai');},6000);
@@ -195,7 +253,11 @@ async function submit(text,source='text') {
   if(pendingRun&&YES.test(text))return approve();
   clearProposal();busy=true;caption(text,'AAPNE POOCHHA');setMode('thinking');
   try {
-    if(pendingAsk){const followup=pendingAsk;pendingAsk=null;const result=await api('/api/context',{merchant_id:MERCHANT,kind:followup.kind,subject:followup.subject,utterance:text,rerun:lastQuestion});if(result.recomputed){present(result.recomputed);return;}}
+    // Every utterance is an ordinary turn on /api/query. It used to branch
+    // here: a reply to a question was posted to /api/context, which stored it
+    // as a fact and then re-asked the ORIGINAL question with no conversation
+    // attached -- so the merchant heard the same answer again, minus the
+    // question. The agent resolves follow-ups against the thread instead.
     lastQuestion=text;
     present(await api('/api/query',{merchant_id:MERCHANT,text,source,conversation_id:CONVERSATION}));
   } catch {busy=false;speak('Abhi connect nahi ho pa raha. Ek minute baad try kijiye.');}
@@ -203,7 +265,7 @@ async function submit(text,source='text') {
 }
 function present(result) {
   if(!result.answer?.hinglish)throw new Error('Missing answer');
-  busy=false;pendingAsk=result.ask||null;
+  busy=false;pendingAsk=result.ask||null;   // kept only so alerts stay quiet mid-question
   if(result.run_id)armProposal(result.run_id);
   speak(result.answer.hinglish);
 }

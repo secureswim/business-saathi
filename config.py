@@ -118,6 +118,16 @@ TUNNEL_HOST_HEADER = "n8n-callback.saathi.internal"
 # LLM -- Gemini plans evidence retrieval and phrases the grounded answer.
 # Python still owns arithmetic, tool execution, action construction and safety.
 # --------------------------------------------------------------------------
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+# The reasoning model: it plans, calls tools and decides when it has enough.
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.2")
+# The speaking model, used only to turn finished evidence into spoken Hinglish.
+# Separately configurable so an Indic-tuned model can take the voice without
+# touching the reasoning, which is where structured-output reliability matters.
+SPEECH_PROVIDER = os.getenv("SAATHI_SPEECH_PROVIDER", "same").lower()
+SPEECH_MODEL = os.getenv("SAATHI_SPEECH_MODEL", "")
+
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
@@ -203,6 +213,10 @@ def sarvam_ready() -> bool:
     return bool(SARVAM_API_KEY)
 
 
+def openai_ready() -> bool:
+    return bool(OPENAI_API_KEY)
+
+
 def gemini_ready() -> bool:
     return bool(GEMINI_API_KEY)
 
@@ -212,10 +226,12 @@ def nvidia_ready() -> bool:
 
 
 def llm_ready() -> bool:
-    return gemini_ready() or nvidia_ready()
+    return openai_ready() or gemini_ready() or nvidia_ready()
 
 
 def llm_provider_label() -> str:
+    if LLM_PROVIDER == "openai":
+        return "openai" if openai_ready() else "offline"
     if LLM_PROVIDER == "gemini":
         return "gemini" if gemini_ready() else "template"
     if LLM_PROVIDER == "nvidia":
@@ -224,13 +240,11 @@ def llm_provider_label() -> str:
         if nvidia_ready() and gemini_ready():
             return "nvidia+gemini-fallback"
         return "nvidia-nim" if nvidia_ready() else ("gemini" if gemini_ready() else "template")
-    if gemini_ready() and nvidia_ready():
-        return "gemini+nvidia-fallback"
-    if gemini_ready():
-        return "gemini"
-    if nvidia_ready():
-        return "nvidia-nim"
-    return "template"
+    ready = [n for n, r in (("openai", openai_ready()), ("gemini", gemini_ready()),
+                            ("nvidia-nim", nvidia_ready())) if r]
+    if not ready:
+        return "offline"
+    return ready[0] if len(ready) == 1 else f"{ready[0]}+{'/'.join(ready[1:])}-fallback"
 
 
 def adapters() -> dict:
@@ -242,3 +256,13 @@ def adapters() -> dict:
         "reasoner": llm_provider_label() if USE_REAL_LLM else "template",
         "campaign_api": "simulated",
     }
+
+
+# --------------------------------------------------------------------------
+# Agent loop. The model decides what to look up; these are the only limits.
+# --------------------------------------------------------------------------
+AGENT_MAX_ROUNDS = int(_num("SAATHI_AGENT_MAX_ROUNDS", 4))
+AGENT_MAX_CALLS = int(_num("SAATHI_AGENT_MAX_CALLS", 10))
+AGENT_BUDGET_SECONDS = _num("SAATHI_AGENT_BUDGET_SECONDS", 9.0)
+AGENT_REPAIR_ATTEMPTS = int(_num("SAATHI_AGENT_REPAIR_ATTEMPTS", 2))
+CONVERSATION_TURNS = int(_num("SAATHI_CONVERSATION_TURNS", 10))

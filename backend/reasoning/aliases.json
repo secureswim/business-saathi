@@ -1,138 +1,139 @@
 {
- "sales": [
-  "bikri",
-  "bikree",
-  "bikari",
-  "sale",
-  "saels",
-  "sels"
- ],
- "discount": [
-  "chhoot",
-  "chuut",
-  "chhut",
-  "chut",
-  "diskaunt",
-  "dischaunt",
-  "diskaont"
- ],
- "offer": [
-  "ofar",
-  "offar",
-  "aufar",
-  "ofer",
-  "ophr",
-  "ophar",
-  "opher"
- ],
- "stock": [
-  "saaman",
-  "samaan",
-  "saman",
-  "maal",
-  "stok"
- ],
- "money": [
-  "paisa",
-  "paise",
-  "rupaye",
-  "rupaiya",
-  "rupee",
-  "cash"
- ],
- "customer": [
-  "grahak",
-  "gahak",
-  "customar",
-  "kastamar"
- ],
- "evening": [
-  "shaam",
-  "sham",
-  "evning",
-  "shyam"
- ],
- "morning": [
-  "subah",
-  "subha",
-  "savere",
-  "sawere"
- ],
- "why": [
-  "kyun",
-  "kyu",
-  "kyon",
-  "kyunki nahi"
- ],
- "bana de": [
-  "banade",
-  "bana do",
-  "banado",
-  "bana dijiye",
-  "bana dijiyega"
- ],
- "business": [
-  "bijness",
-  "bijnes",
-  "dhandha",
-  "dukaan",
-  "dukan",
-  "shop"
- ],
- "prepare": [
-  "taiyari",
-  "tayyari",
-  "taiyar",
-  "prepar"
- ],
- "week": [
-  "hafte",
-  "hafta",
-  "haftе"
- ],
- "tomorrow": [
-  "kal"
- ],
- "result": [
-  "natija",
-  "nateeja",
-  "rizalt",
-  "rijalt",
-  "rezalt",
-  "rijult"
- ],
- "time": [
-  "taim",
-  "taaim",
-  "tem",
-  "samay"
- ],
- "zyada": [
-  "jyada",
-  "jyaada",
-  "zyaada",
-  "jada"
- ],
- "hafte": [
-  "haphte",
-  "hafta",
-  "haphta"
- ],
- "theek": [
-  "thik",
-  "theck",
-  "thek"
- ],
- "pichli": [
-  "pichhli",
-  "pichhle",
-  "pichle",
-  "pichhla",
-  "pichla"
- ],
- "hua": [
-  "huaa",
-  "hue",
-  "huye"
- ]
+  "sales": [
+    "bikri",
+    "bikree",
+    "bikari",
+    "sale",
+    "saels",
+    "sels"
+  ],
+  "discount": [
+    "chhoot",
+    "chuut",
+    "chhut",
+    "chut",
+    "diskaunt",
+    "dischaunt",
+    "diskaont"
+  ],
+  "offer": [
+    "ofar",
+    "offar",
+    "aufar",
+    "ofer",
+    "ophr",
+    "ophar",
+    "opher"
+  ],
+  "stock": [
+    "saaman",
+    "samaan",
+    "saman",
+    "maal",
+    "stok"
+  ],
+  "money": [
+    "paisa",
+    "paise",
+    "rupaye",
+    "rupaiya",
+    "rupee",
+    "cash"
+  ],
+  "customer": [
+    "grahak",
+    "gahak",
+    "customar",
+    "kastamar"
+  ],
+  "evening": [
+    "shaam",
+    "sham",
+    "evning",
+    "shyam"
+  ],
+  "morning": [
+    "subah",
+    "subha",
+    "savere",
+    "sawere"
+  ],
+  "why": [
+    "kyun",
+    "kyu",
+    "kyon",
+    "kyunki nahi"
+  ],
+  "bana de": [
+    "banade",
+    "bana do",
+    "banado",
+    "bana dijiye",
+    "bana dijiyega"
+  ],
+  "business": [
+    "bijness",
+    "bijnes",
+    "dhandha",
+    "dukaan",
+    "dukan",
+    "shop"
+  ],
+  "prepare": [
+    "taiyari",
+    "tayyari",
+    "taiyar",
+    "prepar"
+  ],
+  "week": [
+    "hafte",
+    "hafta",
+    "haftе"
+  ],
+  "result": [
+    "natija",
+    "nateeja",
+    "rizalt",
+    "rijalt",
+    "rezalt",
+    "rijult"
+  ],
+  "time": [
+    "taim",
+    "taaim",
+    "tem",
+    "samay"
+  ],
+  "zyada": [
+    "jyada",
+    "jyaada",
+    "zyaada",
+    "jada"
+  ],
+  "hafte": [
+    "haphte",
+    "hafta",
+    "haphta"
+  ],
+  "theek": [
+    "thik",
+    "theck",
+    "thek"
+  ],
+  "pichli": [
+    "pichhli",
+    "pichhle",
+    "pichle",
+    "pichhla",
+    "pichla"
+  ],
+  "hua": [
+    "huaa",
+    "hue",
+    "huye"
+  ],
+  "tomorrow": [
+    "aane wala kal",
+    "agla din"
+  ]
 }

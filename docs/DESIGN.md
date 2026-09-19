@@ -18,11 +18,12 @@ the whole technical argument.
 1. **The knowledge hierarchy.** Automatic (payments) → integration (POS,
    accounting) → ask the merchant → never fabricated.
 2. **Never fabricate.** Enforced by `reasoning/validator.py`, not by prompt
-   wording.
+   wording. A bad figure is repaired, never swapped for an unrelated answer.
 3. **Ask only when it changes the answer.** One question per exchange, never a
-   form.
-4. **LLM planning, deterministic maths.** Gemini selects evidence tools and explains the
-   result; every figure and executable action still comes from Python.
+   form, and never for something already stated.
+4. **The model decides what to look up; Python owns every number.** The agent
+   chooses tools and when it has enough. It cannot do arithmetic, touch SQL,
+   or set an action's parameters.
 5. **The merchant sees no interface.** One object, four states, spoken approval.
 6. **Nothing acts without approval.** No autonomous actions exist.
 7. **Peers are counts, never names.** `graph/privacy.py`, floor of five.
@@ -35,7 +36,7 @@ the whole technical argument.
 | Layer | Package | Never does |
 | --- | --- | --- |
 | Interaction | `voice/` | business logic |
-| Reasoning | `reasoning/` | arithmetic, SQL |
+| Reasoning | `reasoning/` | arithmetic, SQL, action parameters |
 | Analytics | `analytics/` | call the LLM or the graph |
 | Knowledge | `graph/` | return individual figures |
 | Action | `actions/` | execute without approval |
@@ -55,24 +56,35 @@ the whole technical argument.
 `available: False` is a first-class result: the synthesis layer omits that
 dimension rather than hedging, and `/ops` renders a greyed card.
 
-## Planning and fallback intents
+## The agent, not an intent classifier
 
-`cold_start`, `action_status`, `action_request`, `risk_check`, `what_if`,
-`money_check`, `planning`, `demand_forecast`, `peer_insight`, `time_pattern`,
-`anomaly_check`, `sales_diagnosis`, `business_health`, plus `unknown`.
+There is no intent classification on the live path. The model receives the
+conversation, the merchant's profile, the facts they have already stated, and a
+JSON Schema per tool. It calls tools, sees the results, decides whether to look
+further, and then calls `final_answer`. Up to 4 rounds, 10 calls, ~9 seconds;
+independent tools in a round run concurrently; prerequisites Python knows about
+(a cohort before a peer playbook) are inserted rather than left to the model.
 
-When Gemini is enabled it returns a structured intent, evidence-tool selection,
-and bounded parameters. Python validates the selection, inserts dependencies,
-and runs it in up to three waves. The mappings in `reasoning/toolsets.py` remain
-the offline and API-failure fallback. `cold_start` always uses the deterministic,
-cohort-safe path.
+Intents survive in `reasoning/router.py` and `reasoning/toolsets.py` for ONE
+purpose: answering when no model provider is reachable. Those answers are
+labelled `offline` in the response and on /ops. See `docs/LLM_PIPELINE.md`.
 
-## Sixteen tools
+The reasoning model and the speaking model are separately configurable, so an
+Indic-tuned model can take the Hinglish voice without touching the part where
+structured-output reliability matters. The voice model gets no tools and is held
+to the same grounding gate.
 
-Context, health, trend, time patterns, recent situations, peer cohort,
-peer-relative anomaly, peer playbook, failed plays, local pattern, cohort
-seasonality, cohort profile, demand forecast, money position, optional stock
-context, action history, propose action. All in `reasoning/runner.py`.
+## The tools
+
+Twenty-three, defined with typed JSON Schemas in `reasoning/tools.py` and
+executed by `reasoning/runner.py`. Beyond the original evidence tools, the agent
+era added the ones the old pipeline had no way to express: `sales_lookup`,
+`compare_periods`, `afford_check`, `stock_cover`, `calculate` and
+`remember_fact`. All read-only except `remember_fact` and `propose_action`.
+
+`calculate` exists so that a figure the model needed to derive is still a figure
+Python produced — it evaluates a plain arithmetic expression through an AST
+walker that permits numbers and `+ - * / ( )` and nothing else.
 
 ## Data tiers
 
@@ -100,11 +112,35 @@ context, action history, propose action. All in `reasoning/runner.py`.
 
 Do not start voice until step 7 works in text.
 
-## The three tests that matter
+## Conversation
 
-- `tests/test_grounding.py` — empty evidence must produce an admission, and a
-  fabricated figure must be caught and substituted.
+Turns persist per `conversation_id` in SQLite: question, answer, a compact
+summary of each tool result, and any open question. Only headline values are
+kept — conversation memory must never become a second source of business truth,
+and the ledger is re-read every turn.
+
+Facts the merchant volunteers go through `remember_fact` into `merchant_inputs`
+with a TTL enforced in the query, and are surfaced to the model as *already told
+to you, do not ask again*.
+
+## The four tests that matter
+
+- `tests/test_grounding.py` — a fabricated figure is caught; a duration or a
+  clock time is not mistaken for one; a figure from the merchant's own question
+  counts as grounded.
 - `tests/test_privacy.py` — a cohort of four returns nothing, and no peer
-  identifier appears in any spoken answer.
+  identifier appears in anything sent to a model provider.
 - `tests/test_learning.py` — action → outcome → write-back → the same question
   returns different evidence, and a failure lowers the rate.
+- `tests/test_agent_conversations.py` — the multi-turn conversations the old
+  architecture could not hold, with the model scripted and everything else real.
+
+## The generator owes the ledger an explanation
+
+Actions are planned first, their effect is written into `txn_hourly` as the
+transactions are generated, and each outcome is then MEASURED back out of those
+rows. Previously the outcome figures were invented alongside the ledger and
+agreed with it about half the time. `scripts/generate.py` now fails the build if
+the demo merchant's decline does not survive into the rows, or if either demo
+merchant's cohort falls below the privacy floor — both were silent, and both
+broke the demo in ways that looked like software bugs.

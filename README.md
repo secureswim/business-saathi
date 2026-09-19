@@ -97,7 +97,8 @@ replaced by real Paytm streams and services.**
 
 ```
 voice/      speech in and out                    Sarvam | browser
-reasoning/  NVIDIA NIM / Gemini planning, tools, synthesis, grounding validation
+reasoning/  the agent loop: the model picks tools, Python runs them and
+            owns every number; grounding gate with repair
 analytics/  deterministic computation over the ledger   (no LLM, no graph)
 graph/      similarity, cohorts, collective patterns, write-back
 actions/    proposal, guardrails, orchestration, measurement
@@ -110,13 +111,20 @@ graph cannot reach analytics; their results meet only inside the evidence array.
 **The loop:** talk → understand → analyse → advise → approve → act → measure →
 learn → *and the next merchant's answer is different.*
 
+There is no intent classifier. The model reads the conversation, decides what to
+look up, looks again if it needs to, and then speaks. Python supplies the facts,
+the arithmetic and the limits. With no model key at all it still answers, through
+a deterministic path that labels itself `offline`.
+
 ## The two rules that matter
 
 **1. Never fabricate.** Every tool returns `{value, basis, source, tier}`. The
-synthesis layer may quote only what is inside `value`, and a validator between
-synthesis and speech discards any utterance containing an unbacked figure,
-substituting the deterministic template answer. `/ops` shows a red badge when
-that happens. See `backend/reasoning/validator.py`.
+model may quote only what is inside `value`, and a gate between the answer and
+the speaker checks every claim-bearing figure — money, percentages, counts —
+while leaving durations and clock times alone. An unbacked figure is named and
+handed back to the model to correct, up to twice; if it still fails, the
+grounded part is kept and Saathi says plainly what it cannot stand behind. It
+never substitutes an unrelated answer. See `backend/reasoning/validator.py`.
 
 **2. Peers are counts, never names.** Percentages of each merchant's own
 baseline enter the graph, never rupee figures. A minimum cohort of five is
@@ -148,8 +156,12 @@ Defaults are all-fake. Flip one only after `tests/test_swap.py` is green.
 SAATHI_REAL_COGNEE=1   # Cognee experience graph — run scripts/ingest_cognee.py first
 SAATHI_REAL_SARVAM=1   # Sarvam STT/TTS, needs SARVAM_API_KEY
 SAATHI_REAL_N8N=1      # n8n orchestration, see n8n/README.md
-SAATHI_REAL_LLM=1      # Gemini planning + NVIDIA NIM fallback; configure either key
+SAATHI_REAL_LLM=1      # the agent; set OPENAI_API_KEY (or Gemini / NVIDIA NIM)
 ```
+
+`python scripts/check_integrations.py openai` probes the model with a real tool
+definition and fails if it replies with prose instead of a tool call — a model
+that cannot call tools cannot drive the loop.
 
 See `.env.example`. `config.py` is the file to put on screen when a judge asks
 about production readiness.
@@ -159,7 +171,8 @@ about production readiness.
 ```
 config.py                every flag and threshold
 backend/api/             public, internal (n8n), admin routes + websocket
-backend/reasoning/       router, toolsets, runner, templates, llm, validator
+backend/reasoning/       agent, tools, providers, runner, speech, validator,
+                         conversation; router/toolsets/templates = offline only
 backend/analytics/       trend, patterns, money, anomaly, outcome
 backend/graph/           similarity, privacy, sqlite_store, cognee_store, cards
 backend/actions/         machine, guardrails, orchestrators, monitor, writeback
@@ -168,7 +181,8 @@ frontend/                merchant.html/js, ops.html/js, tokens.css
 n8n/workflows/           three workflow JSONs + docker-compose
 scripts/                 generate, recompute_patterns, verify_claims,
                          ingest_cognee, demo_check
-tests/                   10 suites; the critical three are privacy, grounding, learning
+tests/                   11 suites; the critical four are privacy, grounding,
+                         learning and agent_conversations
 docs/                    DESIGN.md, DEMO_SCRIPT.md, JUDGE_ANSWERS.md
 ```
 

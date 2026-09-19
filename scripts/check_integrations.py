@@ -208,47 +208,56 @@ def check_sarvam() -> None:
                   "  intent router sees it. Check the dashboard for a saarika model.")
 
 
-# ============================================================ gemini
-def check_gemini() -> None:
-    print("\n--- Gemini ---")
-    if not config.GEMINI_API_KEY:
-        line(SKIP, "GEMINI_API_KEY", "not set in .env")
+# ============================================================ model providers
+# The agent needs TOOL CALLING, not just JSON, so that is what is probed here.
+# A provider that returns JSON but ignores a tool definition cannot run the
+# loop, and finding that out on stage is not the plan.
+PROBE_TOOL = {
+    "name": "get_business_health",
+    "description": "Headline figures for this merchant's payments.",
+    "parameters": {"type": "object",
+                   "properties": {"window_days": {"type": "integer"}},
+                   "required": [], "additionalProperties": False},
+}
+PROBE_MESSAGES = [
+    {"role": "system", "content": "You are a merchant assistant. Use the tool."},
+    {"role": "user", "content": "How has my shop done over the last 7 days?"},
+]
+
+
+def _check_provider(label: str, name: str, model: str, configured: bool) -> None:
+    print(f"\n--- {label} ---")
+    if not configured:
+        line(SKIP, f"{label} key", "not set in .env")
         return
-    from backend.reasoning.planner import _gemini_json
+    from backend.reasoning import providers
     try:
-        result = _gemini_json(
-            "Return the requested health status as JSON.",
-            "Return status ready.",
-            {"type": "object",
-             "properties": {"status": {"type": "string"}},
-             "required": ["status"], "additionalProperties": False},
-            max_tokens=256,
-        )
-        line(OK, f"Gemini model {config.GEMINI_MODEL}",
-             f"structured output accepted: {json.dumps(result)[:80]}")
-    except Exception as exc:  # noqa: BLE001
-        fail("Gemini structured output", str(exc)[:200])
+        out = providers.chat(PROBE_MESSAGES, [PROBE_TOOL], timeout=20.0,
+                             provider=name)
+    except Exception as exc:      # noqa: BLE001
+        fail(f"{label} tool calling", str(exc)[:200])
+        return
+    calls = out.get("calls") or []
+    if calls:
+        line(OK, f"{label} model {model}",
+             f"called {calls[0]['name']}({json.dumps(calls[0]['arguments'])})")
+    else:
+        fail(f"{label} tool calling",
+             f"returned text instead of a tool call: {(out.get('text') or '')[:120]}. "
+             f"The agent loop needs tool calling; this model cannot drive it.")
+
+
+def check_openai() -> None:
+    _check_provider("OpenAI", "openai", config.OPENAI_MODEL, config.openai_ready())
+
+
+def check_gemini() -> None:
+    _check_provider("Gemini", "gemini", config.GEMINI_MODEL, config.gemini_ready())
 
 
 def check_nvidia() -> None:
-    print("\n--- NVIDIA NIM ---")
-    if not config.NVIDIA_API_KEY:
-        line(SKIP, "NVIDIA_API_KEY", "not set in .env")
-        return
-    from backend.reasoning.planner import _nvidia_json
-    try:
-        result = _nvidia_json(
-            "Return the requested health status as JSON.",
-            "Return status ready.",
-            {"type": "object",
-             "properties": {"status": {"type": "string"}},
-             "required": ["status"], "additionalProperties": False},
-            max_tokens=80,
-        )
-        line(OK, f"NVIDIA model {config.NVIDIA_MODEL}",
-             f"JSON output accepted: {json.dumps(result)[:80]}")
-    except Exception as exc:  # noqa: BLE001
-        fail("NVIDIA NIM JSON output", str(exc)[:200])
+    _check_provider("NVIDIA NIM", "nvidia-nim", config.NVIDIA_MODEL,
+                    config.nvidia_ready())
 
 
 # ============================================================ n8n
@@ -314,7 +323,7 @@ def check_n8n() -> None:
 # ============================================================ main
 def main() -> int:
     which = [a.lower() for a in sys.argv[1:]] or [
-        "cognee", "sarvam", "gemini", "nvidia", "n8n"]
+        "cognee", "sarvam", "openai", "gemini", "nvidia", "n8n"]
     print(f"\nchecking from {ROOT}")
     print(f".env found: {(ROOT / '.env').exists()}")
     print(f"flags: {config.adapters()}")
@@ -323,6 +332,8 @@ def main() -> int:
         check_cognee()
     if "sarvam" in which:
         check_sarvam()
+    if "openai" in which:
+        check_openai()
     if "gemini" in which:
         check_gemini()
     if "nvidia" in which or "nim" in which:

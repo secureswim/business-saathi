@@ -56,13 +56,17 @@ def measure(merchant_id: str, params: dict, run_id: str, action_type: str,
 
     n_hours = max(1, hi - lo + 1)
     per_hour = before / n_hours          # `before` is a per-DAY total for this window
+    # The synthesised rows must carry this merchant's OWN average ticket. A
+    # hardcoded 42 is a chai-stall ticket, and using it for a pharmacy invented
+    # five times the transaction count the shop actually does.
+    ticket = repo.recent_avg_ticket(merchant_id) or 42.0
     rows = []
     for i in range(days):
         d = today + timedelta(days=i)
         for hour in range(lo, hi + 1):
             amt = per_hour * factor * rng.uniform(0.92, 1.08)
             rows.append((merchant_id, d.isoformat(), hour,
-                         max(1, int(amt / 42)), round(amt, 2)))
+                         max(1, int(round(amt / ticket))), round(amt, 2)))
     repo.insert_txn_hourly(rows)
 
     # 3. measure `after` from the rows just written, same query shape as `before`

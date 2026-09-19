@@ -1,10 +1,14 @@
-"""The default reasoner: evidence -> Hinglish and English, by template.
+"""The offline reasoner: evidence -> Hinglish and English, by template.
 
-Because every figure is pulled directly out of an evidence `value`, a
-fabricated number is structurally impossible. This runs offline with no key and
-no network, which is what makes a clean clone demo-ready, and it is also the
-fallback when the validator rejects the LLM -- so this path is exercised
-constantly rather than being dead code discovered on stage.
+Every figure is pulled directly out of an evidence `value`, so a fabricated
+number is structurally impossible here. This runs with no key and no network,
+which is what makes a clean clone demo-ready.
+
+It is NOT the fallback for a rejected model answer any more. Substituting an
+unrelated template for an answer the merchant was waiting for is what made
+Saathi feel like it kept reverting mid-conversation; a bad figure is now
+repaired instead. This path runs only when no model provider can be reached at
+all, and the answer says so.
 
 House rules: two to four sentences, attribute by source, never name a merchant,
 never explain a cause the evidence does not contain.
@@ -446,14 +450,119 @@ class TemplateReasoner:
                       f"{wb['failed']} of {wb['tried']} cases.")
         return {"hinglish": " ".join(hi), "english": " ".join(en)}
 
+    # ------------------------------------------------------ lookups
+    def _s_sales_lookup(self, ev):
+        s = v(ev, "sales_lookup")
+        if not s:
+            return self._s_business_health(ev)
+        if s.get("no_activity"):
+            return {
+                "hinglish": (f"{s['period'].capitalize()} abhi tak koi payment record "
+                             f"nahi hua hai. Jaise hi aayega, main bata dunga."),
+                "english": (f"No payments recorded {s['period']} so far."),
+                "allow_ask": False,
+            }
+        hi = [f"{s['period'].capitalize()} mein {rs(s['total'])} ka business hua, "
+              f"{s['txns']} payments."]
+        en = [f"{s['period'].capitalize()}: {rs(s['total'])} across {s['txns']} payments."]
+        if s.get("avg_ticket"):
+            hi.append(f"Average bill {rs(s['avg_ticket'])} ka raha.")
+            en.append(f"Average ticket {rs(s['avg_ticket'])}.")
+        if s.get("days_open", 1) > 1:
+            hi.append(f"Roz ka average {rs(s['per_day'])}.")
+            en.append(f"That is {rs(s['per_day'])} per trading day.")
+        return {"hinglish": " ".join(hi), "english": " ".join(en)}
+
+    def _s_period_compare(self, ev):
+        c = v(ev, "compare_periods")
+        if not c:
+            return self._s_sales_lookup(ev)
+        word = {"up": "behtar", "down": "kam", "flat": "lagbhag barabar"}[c["direction"]]
+        hi = [f"{c['period'].capitalize()} {word} hai — roz ka {rs(c['per_day'])}, "
+              f"{c['compared_to']} {rs(c['per_day_before'])} tha."]
+        en = [f"{c['period'].capitalize()} is {c['direction']} versus "
+              f"{c['compared_to']}: {rs(c['per_day'])} per day against "
+              f"{rs(c['per_day_before'])}."]
+        if abs(c["change_pct"]) >= 2:
+            hi.append(f"Yani {abs(c['change_pct'])}% ka farak.")
+            en.append(f"A {abs(c['change_pct'])}% difference.")
+        return {"hinglish": " ".join(hi), "english": " ".join(en)}
+
+    def _s_afford_check(self, ev):
+        a = v(ev, "afford_check") or v(ev, "get_money_position")
+        if not a:
+            return self._s_money_check(ev)
+        if a.get("scope") == "inflow_only":
+            return {
+                "hinglish": (f"Aapke payments ke hisaab se agle {a.get('days', 30)} din "
+                             f"mein takreeban {rs(a.get('revenue_expected', 0))} aane "
+                             f"chahiye. Lekin aapke kharche mujhe dikhte nahi, isliye "
+                             f"pakka nahi keh sakta ki {rs(a.get('purchase', 0))} "
+                             f"nikalna safe hai."),
+                "english": (f"About {rs(a.get('revenue_expected', 0))} should come in "
+                            f"over the next {a.get('days', 30)} days. I cannot see your "
+                            f"outgoings, so I cannot say whether "
+                            f"{rs(a.get('purchase', 0))} is safe."),
+            }
+        verdict_hi = {"comfortable": "haan, aaram se ho jayega",
+                      "tight": "ho jayega lekin tight rahega",
+                      "unsafe": "abhi safe nahi hai"}[a["verdict"]]
+        hi = [f"{rs(a['purchase'])} ka payment — {verdict_hi}."]
+        en = [f"{rs(a['purchase'])}: {a['verdict']}."]
+        hi.append(f"Agle {a['days']} din mein bills nikalne ke baad takreeban "
+                  f"{rs(a['buffer_expected'])} bachega, kam chale toh "
+                  f"{rs(a['buffer_stressed'])}.")
+        en.append(f"After known bills over {a['days']} days the expected buffer is "
+                  f"{rs(a['buffer_expected'])}, or {rs(a['buffer_stressed'])} on a "
+                  f"weak run.")
+        if a.get("bills"):
+            labels = ", ".join(dict.fromkeys(b["label"] for b in a["bills"]))
+            hi.append(f"Isme {labels} shamil hain.")
+            en.append(f"That counts {labels}.")
+        if a.get("safe_after_days"):
+            hi.append(f"{a['safe_after_days']} din baad safe ho jayega.")
+            en.append(f"It becomes safe after about {a['safe_after_days']} days.")
+        return {"hinglish": " ".join(hi), "english": " ".join(en)}
+
+    # ------------------------------------------------------- small talk
+    def _s_help(self, ev):
+        return {
+            "hinglish": ("Namaste! Main aapke Paytm payments dekh kar bata sakta hoon ki "
+                         "dhandha kaisa chal raha hai. Poochh ke dekhiye — 'aaj kitna "
+                         "business hua', 'sales kyun kam hai', ya 'mere jaise dukaanon "
+                         "mein kya chal raha hai'."),
+            "english": ("I read your Paytm payments and tell you how the shop is doing. "
+                        "Try: 'how much today', 'why are sales down', or 'what are shops "
+                        "like mine doing'."),
+            "allow_ask": False,
+        }
+
     # ---------------------------------------------------------- unknown
     def _s_unknown(self, ev):
-        return {
-            "hinglish": "Main ye theek se samajh nahi paaya. Aap sales ke baare mein pooch "
-                        "rahe hain, ya paise ke baare mein?",
-            "english": "I could not classify that. Ask about sales, cash, timings, similar "
-                       "merchants, or say 'offer bana de'.",
-        }
+        """Honest, and never a clarify loop.
+
+        The old version asked whether they meant sales or money, which is a
+        question the merchant has already answered by asking. If the offline
+        path cannot route something, it says what it can see and stops.
+        """
+        h = v(ev, "get_business_health") or v(ev, "get_sales_trend")
+        hi = ["Ye mere paas nahi hai — main sirf aapke payments dekh sakta hoon, "
+              "isliye profit, margin, cash sale ya customer ne kya socha, ye nahi "
+              "bata sakta."]
+        en = ["I can't see that. I only read your Paytm payments, so profit, margins, "
+              "cash sales and why a customer did something are outside what I have."]
+        if h:
+            daily = h.get("current_daily") or h.get("revenue_per_day")
+            if daily:
+                hi.append(f"Jo main bata sakta hoon: abhi roz ka {rs(daily)} chal raha "
+                          f"hai. Sales, timing ya aas-paas ke dukaanon ke baare mein "
+                          f"poochhiye.")
+                en.append(f"What I can tell you: takings are running at {rs(daily)} a "
+                          f"day. Ask me about sales, timings or similar shops.")
+        else:
+            hi.append("Sales, timing ya aas-paas ke dukaanon ke baare mein poochhiye.")
+            en.append("Ask me about sales, timings or similar shops nearby.")
+        return {"hinglish": " ".join(hi), "english": " ".join(en), "allow_ask": False}
 
 
 def _action_hi(atype: str) -> str:

@@ -10,7 +10,6 @@ from backend.actions import machine
 from backend.actions.orchestrator import LocalOrchestrator
 from backend.graph.sqlite_store import SqliteGraph
 from backend.reasoning import validator
-from backend.reasoning.llm import LLMReasoner
 from backend.reasoning.templates import TemplateReasoner
 from backend.reasoning import engine
 from backend.voice.adapter import BrowserVoice, SarvamVoice
@@ -33,13 +32,14 @@ def test_evidence_envelope_is_stable_across_every_question():
             assert ev["tier"] in ("A", "B", "C")
 
 
-def test_both_reasoners_pass_the_same_grounding_bar():
+def test_the_offline_reasoner_passes_the_grounding_bar():
+    """The offline path is held to exactly the same bar as the agent. It is
+    allowed to be simpler; it is not allowed to be wrong."""
     r = engine.ask(config.DEMO_MERCHANT, "sales kyun kam hain")
     evidence = r["evidence"]
-    for reasoner in (TemplateReasoner(), LLMReasoner()):
-        out = reasoner.synthesize("sales_diagnosis", "sales kyun kam hain", evidence)
-        ok, unbacked = validator.validate(out["hinglish"], evidence)
-        assert ok, (reasoner.name, unbacked)
+    out = TemplateReasoner().synthesize("sales_diagnosis", "sales kyun kam hain", evidence)
+    ok, unbacked = validator.validate(out["hinglish"], evidence)
+    assert ok, unbacked
 
 
 def test_voice_adapters_share_a_contract():

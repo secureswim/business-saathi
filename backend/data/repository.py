@@ -100,6 +100,19 @@ def insert_txn_hourly(rows: list[tuple]) -> None:
     db.write_many("INSERT OR REPLACE INTO txn_hourly VALUES (?,?,?,?,?)", rows)
 
 
+def recent_avg_ticket(merchant_id: str, days: int = 30) -> float | None:
+    """This merchant's observed rupees-per-transaction. Used wherever a ticket
+    size is needed, so no category constant is ever assumed."""
+    end = db.today() - timedelta(days=1)
+    start = end - timedelta(days=days - 1)
+    r = db.q1("SELECT COALESCE(SUM(amount),0) a, COALESCE(SUM(txns),0) t "
+              "FROM txn_hourly WHERE merchant_id=? AND day>=? AND day<=?",
+              (merchant_id, start.isoformat(), end.isoformat()))
+    if not r or not r["t"]:
+        return None
+    return round(float(r["a"]) / int(r["t"]), 2)
+
+
 # ---------------------------------------------------------------- situations
 def recent_situations(merchant_id: str, days: int = 30) -> list[dict]:
     since = (db.today() - timedelta(days=days)).isoformat()
