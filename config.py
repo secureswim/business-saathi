@@ -76,6 +76,16 @@ COGNEE_API_KEY = os.getenv("COGNEE_API_KEY", "")
 COGNEE_BASE_URL = os.getenv("COGNEE_BASE_URL", "").rstrip("/")
 COGNEE_TENANT_ID = os.getenv("COGNEE_TENANT_ID", "")
 COGNEE_DATASET = os.getenv("COGNEE_DATASET", "paytm_hack")
+# Which card set the Cognee dataset was built from.
+#
+# Normally recorded in the ledger's `meta` table by scripts/ingest_cognee.py.
+# That does not survive a stateless deploy: Render regenerates the database on
+# every boot, so the marker is lost and the adapter reports "never ingested"
+# forever even when the graph is perfectly current. Setting this env var says
+# "the dataset was ingested from the data whose fingerprint is X" -- which is
+# safe precisely because SAATHI_TODAY makes generation reproducible, so the
+# same code and the same pinned date always produce the same fingerprint.
+COGNEE_INGESTED_FINGERPRINT = os.getenv("COGNEE_INGESTED_FINGERPRINT", "").strip()
 COGNEE_SEARCH_TYPE = os.getenv("COGNEE_SEARCH_TYPE", "CHUNKS")
 COGNEE_TOP_K = int(_num("COGNEE_TOP_K", 15))
 COGNEE_TIMEOUT = _num("COGNEE_TIMEOUT", 20.0)

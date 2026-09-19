@@ -29,7 +29,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import config  # noqa: E402
 
-PROBE_TIMEOUT = 4.0
+PROBE_TIMEOUT = 2.5
 PROBE_TTL = 30.0
 
 _cache: dict[str, dict] = {}
@@ -83,7 +83,10 @@ def probe_cognee(force: bool = False) -> dict:
         # ingest only ever appends -- so the fingerprint is the only way to
         # know the graph is not answering from a previous generation.
         current = cards.fingerprint()
-        ingested = db.meta_get("cognee_fingerprint")
+        # the ledger's own record first; the env var is the stateless-deploy
+        # fallback for hosts that rebuild the database on every boot
+        ingested = (db.meta_get("cognee_fingerprint")
+                    or config.COGNEE_INGESTED_FINGERPRINT or None)
         stale = ingested != current
         detail = f"{len(datasets)} dataset(s)"
         if ingested is None:
@@ -162,12 +165,22 @@ def probe_sarvam() -> dict:
 
 
 def snapshot(force: bool = False) -> dict:
-    """Everything /ops needs to colour its adapter chips honestly."""
+    """Everything /ops needs to colour its adapter chips honestly.
+
+    The two network probes run CONCURRENTLY. Serially they were two timeouts
+    deep whenever both adapters were down, which is precisely when /ops is
+    being loaded to find out why.
+    """
     live = serving()
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        cognee_future = pool.submit(probe_cognee, force)
+        n8n_future = pool.submit(probe_n8n, force)
+        cognee_result, n8n_result = cognee_future.result(), n8n_future.result()
     adapters = {
-        "graph": {**probe_cognee(force), "declared": config.adapters()["graph"],
+        "graph": {**cognee_result, "declared": config.adapters()["graph"],
                   "serving": live.get("graph", "unknown")},
-        "orchestrator": {**probe_n8n(force),
+        "orchestrator": {**n8n_result,
                          "declared": config.adapters()["orchestrator"],
                          "serving": live.get("orchestrator", "unknown")},
         "reasoner": {**probe_llm(force), "declared": config.adapters()["reasoner"],

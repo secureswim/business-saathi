@@ -87,6 +87,11 @@ def main() -> int:
     print(json.dumps(result, indent=1))
     db.meta_set("cognee_fingerprint", fingerprint)
     db.meta_set("cognee_ingested_at", time.strftime("%Y-%m-%dT%H:%M:%S"))
+    print(f"\n  For a stateless deploy (Render), set these so the hosted copy")
+    print(f"  knows the graph is current -- the database there is rebuilt on")
+    print(f"  every boot and loses this record:")
+    print(f"      SAATHI_TODAY={db.meta_get('today')}")
+    print(f"      COGNEE_INGESTED_FINGERPRINT={fingerprint}")
 
     # cognify runs on the tenant after we return, so poll instead of leaving
     # you to guess whether the graph actually built.
