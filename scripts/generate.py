@@ -195,9 +195,24 @@ def day_multiplier(d: date, category: str, rng: random.Random,
     return max(0.15, m)
 
 
+def generation_date() -> date:
+    """`today` for the whole dataset.
+
+    Read from SAATHI_TODAY when set, so the same code produces the same
+    database on a laptop in IST and a container in UTC. Without it the two
+    silently diverge: every window here is anchored to this date, so a one-day
+    difference moves the demo merchant's decline, the festive window and the
+    obligation schedule, and the figures you rehearsed stop matching the ones
+    on screen.
+    """
+    if config.GENERATION_DATE:
+        return date.fromisoformat(config.GENERATION_DATE)
+    return date.today()
+
+
 def main() -> None:
     rng = random.Random(SEED)
-    today = date.today()
+    today = generation_date()
     start_day = today - timedelta(days=DAYS)
     fest_start, fest_end = festive_window(today, start_day)
     market_event_start = today - timedelta(days=120)  # pattern 4: market-wide dip
@@ -620,6 +635,8 @@ def main() -> None:
     con.close()
 
     print(f"built {db_path}")
+    print(f"  generated for      {today}"
+          f"{' (pinned by SAATHI_TODAY)' if config.GENERATION_DATE else ' (system clock)'}")
     for k, v in counts.items():
         print(f"  {k:16s} {v:>9,}")
     print(f"  merchants with obligations: {with_ob}  with stock feed: {with_st}")

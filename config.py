@@ -37,6 +37,13 @@ def _load_env(path: Path) -> None:
 
 _load_env(ROOT / ".env")
 
+# Pin the generation date to make the dataset reproducible ACROSS MACHINES.
+# The seed already fixes every random draw, but `today` was read from the
+# system clock -- so a laptop in IST and a server in UTC generate different
+# ledgers from the same code, with different decline windows and different
+# figures. Set this and every environment builds the identical database.
+GENERATION_DATE = os.getenv("SAATHI_TODAY", "").strip()
+
 DB_PATH = Path(os.getenv("SAATHI_DB", ROOT / "data" / "saathi.db"))
 SEED_DB_PATH = DB_PATH.with_name(DB_PATH.stem + ".seed.db")
 WEB_DIR = ROOT / "frontend"
