@@ -385,3 +385,29 @@ def test_live_model_answers_the_three_demo_questions():
         assert r["answer"]["hinglish"].strip()
         assert r["answer"]["validator"]["passed"], (question, r["answer"]["validator"])
         assert r["elapsed_ms"] < 15000, (question, r["elapsed_ms"])
+
+
+def test_propose_action_pulls_in_the_playbook_it_needs(scripted):
+    """"offer bana de" makes calling propose_action directly the obvious move.
+
+    The old wave planner inserted get_peer_playbook as a prerequisite; the
+    agent executor only inserted the cohort. So a direct call returned "no
+    cohort-supported play" -- an empty result indistinguishable from the cohort
+    genuinely having no evidence -- and no offer ever reached the merchant."""
+    llm = scripted([
+        [("propose_action", {})],
+        {"final": {"hinglish": "Shaam ka offer taiyar hai, approve karein?",
+                   "english": "An evening offer is ready. Approve?",
+                   "confidence": "high", "recommends_action": True}},
+    ])
+    r = engine.ask(M, "offer bana de", conversation_id=conversation.new_id())
+
+    assert llm.tools_called() == ["propose_action"], "the model asked for one tool"
+    tools = [e["tool"] for e in r["evidence"]]
+    assert "get_peer_playbook" in tools, tools
+    assert tools.index("get_peer_playbook") < tools.index("propose_action")
+
+    proposal = r["action_proposal"]
+    assert proposal, "no offer was produced"
+    assert proposal["type"] == "evening_offer"
+    assert proposal["evidence_summary"]

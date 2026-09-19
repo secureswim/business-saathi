@@ -39,10 +39,37 @@ STOCK_WORDS = re.compile(
     r"\b(stock|inventory|bacha|bache|bachi|bachaa|quantity|units?|maal|"
     r"bottles?|pieces?|packets?|strips?|litres?|kg)\b", re.I)
 
-# Tools that cannot run until the cohort is known. The agent does not have to
-# know this: the executor fetches the prerequisite itself.
-NEEDS_COHORT = {"get_peer_relative_anomaly", "get_peer_playbook", "get_failed_plays",
-                "propose_action"}
+# Tools that cannot run until something else has. The agent does not have to
+# know this: the executor resolves it, transitively, before running the tool.
+#
+# `propose_action` needing the playbook is the one that matters. "offer bana
+# de" makes calling propose_action directly the obvious move, and without the
+# playbook it returns "no cohort-supported play" -- an empty result that looks
+# exactly like the cohort having no evidence, rather than like a missing step.
+PREREQUISITES: dict[str, tuple[str, ...]] = {
+    "get_peer_relative_anomaly": ("get_peer_cohort",),
+    "get_peer_playbook": ("get_peer_cohort",),
+    "get_failed_plays": ("get_peer_cohort",),
+    "propose_action": ("get_peer_cohort", "get_peer_playbook"),
+}
+
+# kept for callers that only ask "does this need the cohort?"
+NEEDS_COHORT = {name for name, deps in PREREQUISITES.items()
+                if "get_peer_cohort" in deps}
+
+
+def prerequisites(name: str) -> list[str]:
+    """Everything that must have run before `name`, in order, deduplicated."""
+    order: list[str] = []
+
+    def walk(tool: str) -> None:
+        for dep in PREREQUISITES.get(tool, ()):
+            walk(dep)
+            if dep not in order:
+                order.append(dep)
+
+    walk(name)
+    return order
 
 
 # ---------------------------------------------------------------- schemas

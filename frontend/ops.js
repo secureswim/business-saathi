@@ -35,11 +35,15 @@ const CHIP_TITLE = {
   simulated: "no real implementation exists; labelled as simulated",
 };
 
+let adaptersInFlight = false;
 async function renderAdapters() {
+  if (adaptersInFlight) return;      // a slow probe must not stack up
+  adaptersInFlight = true;
   let snap;
   try {
     snap = await (await fetch("/api/adapters")).json();
   } catch { return; }
+  finally { adaptersInFlight = false; }
   $("adapters").innerHTML = Object.entries(snap.adapters).map(([name, a]) => {
     const shown = a.state === "degraded"
       ? `${a.declared} → ${(a.serving && a.serving !== "unknown") ? a.serving : "fallback"}`
@@ -55,10 +59,13 @@ async function renderAdapters() {
 (async function boot() {
   const cfg = await (await fetch("/api/config")).json();
   activeOrchestrator = cfg.adapters.orchestrator;
-  await renderAdapters();
-  setInterval(renderAdapters, 15000);
   renderPipeline();
 
+  // The merchant list is populated FIRST and the adapter probes are never
+  // awaited. They reach out to Cognee and n8n with multi-second timeouts, so
+  // awaiting them here left the presenter's merchant dropdown empty for the
+  // length of two network timeouts whenever either adapter was unreachable --
+  // which looks exactly like a broken switcher.
   const data = await (await fetch("/api/merchants")).json();
   const sel = $("merchant");
   data.merchants.forEach(m => {
@@ -72,6 +79,9 @@ async function renderAdapters() {
   loadGraph(sel.value);
   sel.onchange = () => loadGraph(sel.value);
   connect();
+
+  renderAdapters();
+  setInterval(renderAdapters, 15000);
 })();
 
 function connect() {

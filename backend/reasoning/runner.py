@@ -93,8 +93,9 @@ class Runner:
 
         if self.context is None and name != "get_merchant_context":
             self._run_one("get_merchant_context")
-        if name in toolspec.NEEDS_COHORT and "get_peer_cohort" not in self.by_tool:
-            self._run_one("get_peer_cohort")
+        for dep in toolspec.prerequisites(name):
+            if dep not in self.by_tool:
+                self._run_one(dep)
 
         self.params.update(args)
         before = len(self.evidence)
