@@ -75,9 +75,28 @@ async function renderAdapters() {
       + (m.has_obligations ? " · $" : "") + (m.has_stock_feed ? " · stock" : "");
     sel.appendChild(o);
   });
-  sel.value = data.demo_merchant;
+  // The presenter's choice is sticky. A `reset` broadcast reloads this page,
+  // and boot used to hard-set the dropdown back to the demo merchant -- so
+  // switching to another merchant and then touching anything that resets
+  // (the reset button, a merchant-page action, an admin call) silently threw
+  // the selection away and snapped back to M001.
+  const remembered = (() => {
+    try { return sessionStorage.getItem("ops.merchant"); } catch { return null; }
+  })();
+  const wanted = (remembered && data.merchants.some(m => m.id === remembered))
+    ? remembered : data.demo_merchant;
+  sel.value = wanted;
   loadGraph(sel.value);
-  sel.onchange = () => loadGraph(sel.value);
+  sel.onchange = () => {
+    try { sessionStorage.setItem("ops.merchant", sel.value); } catch { /* private mode */ }
+    loadGraph(sel.value);
+    // Tell the MERCHANT page to follow. It is pinned to whatever ?m= it was
+    // opened with, so without this the presenter switches merchant here, the
+    // canvas and cohort change, and every spoken answer is still about M001.
+    // The endpoint broadcasts a reset carrying the id; merchant.js navigates.
+    fetch(`/api/admin/select-merchant?merchant_id=${encodeURIComponent(sel.value)}`,
+          { method: "POST" }).catch(() => { /* the ops view is already correct */ });
+  };
   connect();
 
   renderAdapters();
@@ -223,6 +242,11 @@ function handle(m) {
       break;
 
     case "reset":
+      // A reset with a merchant id is a request to FOLLOW that merchant, not
+      // to forget which one we were looking at.
+      if (m.merchant_id) {
+        try { sessionStorage.setItem("ops.merchant", m.merchant_id); } catch { /* */ }
+      }
       location.reload();
       break;
   }

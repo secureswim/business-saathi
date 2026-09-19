@@ -234,7 +234,11 @@ function speak(text,{remember=true,label='SAATHI KA JAWAAB'}={}) {
     };
     if(!serverSide){browserVoice();return;}
     setMode('thinking','Awaaz taiyaar ho rahi hai…');
-    api('/api/tts',{text}).then(result=>{
+    // Sarvam gets the same spoken form the browser voice gets. "Rs 4,321"
+    // is read as letters-then-digits by a TTS engine; "chaar hazaar teen sau
+    // ikkees rupaye" is what a person says. The caption still shows the
+    // digits, so the screen and the ear agree on the number either way.
+    api('/api/tts',{text:speakableHindi(text)}).then(result=>{
       if(generation!==speechGeneration)return;
       if(!result.ok||!result.audio_b64){browserVoice();return;}
       audio=new Audio('data:audio/wav;base64,'+result.audio_b64);audio.volume=volume;
@@ -317,7 +321,7 @@ api('/api/config').then(c=>serverSide=!!c.voice_server_side).catch(()=>{});
 (function connect(){
   const socket=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`);
   socket.onopen=()=>{$('connection').innerHTML='<i></i> Saathi connected';$('connection').classList.add('online');};
-  socket.onmessage=e=>{let event;try{event=JSON.parse(e.data);}catch{return;}if(event.type==='reset'){location.reload();return;}if(event.type==='proactive_alert'&&event.merchant_id===MERCHANT)queuedAlert={text:event.hinglish,label:'SAATHI KA ALERT'};};
+  socket.onmessage=e=>{let event;try{event=JSON.parse(e.data);}catch{return;}if(event.type==='reset'){/* a reset naming a merchant is the presenter switching on /ops; reloading the same URL would keep this page on the old merchant */if(event.merchant_id&&event.merchant_id!==MERCHANT){location.search=`?m=${encodeURIComponent(event.merchant_id)}`;return;}location.reload();return;}if(event.type==='proactive_alert'&&event.merchant_id===MERCHANT)queuedAlert={text:event.hinglish,label:'SAATHI KA ALERT'};};
   socket.onclose=()=>{$('connection').innerHTML='<i></i> Reconnecting';$('connection').classList.remove('online');setTimeout(connect,2500);};
 })();
 setInterval(()=>{if(queuedAlert&&mode==='idle'&&!busy&&!pendingRun&&!pendingAsk){const alert=queuedAlert;queuedAlert=null;speak(alert.text,{label:alert.label});}},1000);
