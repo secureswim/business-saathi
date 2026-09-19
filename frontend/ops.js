@@ -21,13 +21,42 @@ const STAGES = ["query_started", "stt_complete", "intent_detected", "context_loa
 let peers = [], extended = [], me = null, t0 = 0, evQueue = [], draining = false;
 let activeOrchestrator = "state_machine";
 
+/* ---------------- adapter chips ----------------
+   These used to print the configured NAME, so the header said "graph: cognee"
+   whenever a flag was set and a key existed -- regardless of whether Cognee
+   had answered anything. On stage that is the demo telling a judge something
+   untrue. The chip now shows what is actually serving, and says so when the
+   real adapter is configured but the fallback is doing the work. */
+const CHIP_TITLE = {
+  live: "answering now",
+  configured: "configured; nothing has come through it yet this session",
+  degraded: "configured but NOT answering -- the fallback is doing the work",
+  fallback: "not configured; running the offline implementation",
+  simulated: "no real implementation exists; labelled as simulated",
+};
+
+async function renderAdapters() {
+  let snap;
+  try {
+    snap = await (await fetch("/api/adapters")).json();
+  } catch { return; }
+  $("adapters").innerHTML = Object.entries(snap.adapters).map(([name, a]) => {
+    const shown = a.state === "degraded"
+      ? `${a.declared} → ${(a.serving && a.serving !== "unknown") ? a.serving : "fallback"}`
+      : (a.serving && a.serving !== "unknown" ? a.serving : a.declared);
+    const detail = [a.detail, a.ms != null ? `${a.ms}ms` : null]
+      .filter(Boolean).join(" · ");
+    return `<span class="chip ${a.state}" title="${name}: ${CHIP_TITLE[a.state] || ""}${detail ? " — " + detail.replace(/"/g, "'") : ""}">`
+         + `${name}: ${shown}</span>`;
+  }).join("");
+}
+
 /* ---------------- boot ---------------- */
 (async function boot() {
   const cfg = await (await fetch("/api/config")).json();
   activeOrchestrator = cfg.adapters.orchestrator;
-  $("adapters").innerHTML = Object.entries(cfg.adapters)
-    .map(([k, v]) => `<span class="chip ${v === "simulated" ? "sim" : ""}">${k}: ${v}</span>`)
-    .join("");
+  await renderAdapters();
+  setInterval(renderAdapters, 15000);
   renderPipeline();
 
   const data = await (await fetch("/api/merchants")).json();

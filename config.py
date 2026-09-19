@@ -275,3 +275,29 @@ AGENT_MAX_CALLS = int(_num("SAATHI_AGENT_MAX_CALLS", 10))
 AGENT_BUDGET_SECONDS = _num("SAATHI_AGENT_BUDGET_SECONDS", 9.0)
 AGENT_REPAIR_ATTEMPTS = int(_num("SAATHI_AGENT_REPAIR_ATTEMPTS", 2))
 CONVERSATION_TURNS = int(_num("SAATHI_CONVERSATION_TURNS", 10))
+
+
+# --------------------------------------------------------------------------
+# Configuration sanity. A stale value in .env is invisible and survives a
+# rebuild, so the two that would quietly degrade the demo are checked here.
+# --------------------------------------------------------------------------
+CALIBRATED_SIMILARITY_THRESHOLD = 0.82
+
+
+def config_warnings() -> list[str]:
+    out = []
+    if SIMILARITY_THRESHOLD > CALIBRATED_SIMILARITY_THRESHOLD + 0.001:
+        out.append(
+            f"SIMILARITY_THRESHOLD={SIMILARITY_THRESHOLD} is above the "
+            f"{CALIBRATED_SIMILARITY_THRESHOLD} the current weights were "
+            f"calibrated for. This was the right value when category carried "
+            f"35% of the score; with behaviour carrying 75% it shrinks every "
+            f"cohort and can drop merchants below the privacy floor. Remove "
+            f"the line from .env or set it to "
+            f"{CALIBRATED_SIMILARITY_THRESHOLD}.")
+    if USE_REAL_N8N and not PUBLIC_API_URL and "localhost" not in N8N_BASE_URL:
+        out.append(
+            "SAATHI_REAL_N8N=1 with a hosted n8n but no PUBLIC_API_URL. The "
+            "workflows will fire and then fail to call back, which looks like "
+            "a hang. Start a tunnel and set PUBLIC_API_URL.")
+    return out

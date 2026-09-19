@@ -271,3 +271,49 @@ def test_a_mislabelled_merchant_still_finds_its_real_peers():
     kept = before & after
     assert len(kept) >= len(before) * 0.6, (
         f"only {len(kept)} of {len(before)} peers survived a relabel")
+
+
+# --------------------------------------------------------------------------
+# Cognee cards must describe the cohort they are actually keyed on.
+# --------------------------------------------------------------------------
+from backend.graph import cards                            # noqa: E402
+
+
+def test_cards_describe_the_measured_cohort_in_readable_english():
+    """The key changed from category|locality|band to rhythm|ticket|locality.
+
+    The card writers still split it three ways and called the parts category,
+    locality and band, which produced retrievable documents reading "Among
+    middays in micro locations with college_area volume" -- meaningless text
+    that Cognee would happily embed and return as evidence."""
+    payload = cards.all_cards()
+    for group in ("profiles", "experiences", "patterns"):
+        assert payload[group], group
+        for card in payload[group][:40]:
+            text = card["text"]
+            for nonsense in ("middays in", "micro locations", "college_area volume",
+                             "evenings in", "with unknown volume"):
+                assert nonsense not in text, (group, text)
+            assert "|" not in text, f"a raw cohort key leaked into prose: {text}"
+
+
+def test_card_metadata_carries_the_behavioural_key():
+    payload = cards.all_cards()
+    categories = {r["category"] for r in repo.all_merchants()}
+    for group in ("profiles", "experiences", "patterns"):
+        for card in payload[group][:40]:
+            key = card["metadata"].get("cohort_key")
+            assert key and len(key.split("|")) == 3, (group, key)
+            assert not (set(key.split("|")) & categories), (
+                f"{group} card is still keyed on a category label: {key}")
+
+
+def test_the_fingerprint_changes_when_the_data_changes():
+    """Cognee's add_text only appends, so a re-ingest after a regeneration
+    leaves the previous version's cards in the graph. The fingerprint is the
+    only way to notice."""
+    payload = cards.all_cards()
+    first = cards.fingerprint(payload)
+    assert first == cards.fingerprint(payload), "fingerprint is not stable"
+    mutated = {**payload, "patterns": payload["patterns"][:-1]}
+    assert cards.fingerprint(mutated) != first

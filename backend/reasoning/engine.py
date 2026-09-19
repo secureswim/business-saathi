@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import config  # noqa: E402
+from backend import health  # noqa: E402
 from backend.data import repository as repo  # noqa: E402
 from backend.models.events import event  # noqa: E402
 from backend.reasoning import (agent, conversation, providers, router,  # noqa: E402
@@ -59,6 +60,7 @@ def ask(merchant_id: str, question: str, emit=None, params: dict | None = None,
         answer = _offline_turn(merchant_id, question, run, qid, emit)
 
     evidence = run.evidence
+    _note_what_served(answer, evidence)
     elapsed = int((time.time() - t0) * 1000)
     emit(event("response_ready", qid, hinglish=answer.get("hinglish"),
                english=answer.get("english"), reasoner=answer.get("reasoner"),
@@ -165,3 +167,19 @@ def _offline_turn(merchant_id, question, run, qid, emit) -> dict:
                       "degraded": False, "substituted": False},
         "agent": {"mode": "offline", "intent": plan.intent, "matched": plan.matched},
     }
+
+
+def _note_what_served(answer: dict, evidence) -> None:
+    """Record the implementation that actually produced this answer.
+
+    The graph line is the one that matters. `basis.store` distinguishes a real
+    Cognee retrieval from the ledger answering while retrieval was still in
+    flight, and only the first of those earns a green chip on /ops.
+    """
+    stores = {e.basis.get("store") for e in evidence
+              if getattr(e, "source", None) == "graph" and e.available
+              and isinstance(e.basis, dict) and e.basis.get("store")}
+    if stores:
+        health.note_serving("graph", "cognee" if any(s == "cognee" for s in stores)
+                            else sorted(stores)[0])
+    health.note_serving("reasoner", answer.get("reasoner", "unknown"))

@@ -148,6 +148,21 @@ class CogneeClient:
         self._dataset_id = created["id"]
         return self._dataset_id
 
+    def delete_dataset(self) -> bool:
+        """Drop the dataset so an ingest REPLACES rather than appends.
+
+        There is no upsert: `add_text` always appends. Without this, ingesting
+        after a regeneration leaves stale experience cards in the graph next to
+        the new ones and retrieval happily returns both.
+        """
+        for d in self.list_datasets():
+            if d.get("name") == self.dataset:
+                self._request("DELETE", f"/datasets/{d['id']}", timeout=60.0)
+                self._dataset_id = None
+                return True
+        self._dataset_id = None
+        return False
+
     def graph_summary(self) -> dict:
         """Node and edge counts.
 
@@ -324,11 +339,21 @@ class CogneeGraph(GraphStore):
 
     # ------------------------------------------------------------- ingestion
     def ingest_all(self, batch_size: int = 25, cognify: bool = True,
-                   progress=print) -> dict:
-        """Full ingest. Run by scripts/ingest_cognee.py after generation."""
+                   progress=print, replace: bool = True) -> dict:
+        """Full ingest. Run by scripts/ingest_cognee.py after generation.
+
+        `replace` drops the dataset first, which is almost always what you
+        want: the ledger has been regenerated, every merchant id, outcome and
+        cohort key may have moved, and appending would leave the previous
+        version's cards in the graph to be retrieved alongside the new ones.
+        """
         if self.client is None:
             raise CogneeError("Cognee is not configured")
         payload = cards.all_cards()
+        dropped = False
+        if replace:
+            progress("  dropping the existing dataset (append would duplicate)")
+            dropped = self.client.delete_dataset()
         self.client.ensure_dataset()
 
         sent = 0
@@ -340,6 +365,8 @@ class CogneeGraph(GraphStore):
                 sent += len(chunk)
                 progress(f"  {group}: {min(i + batch_size, len(texts))}/{len(texts)}")
         result = {"dataset": self.client.dataset, "texts_sent": sent,
+                  "replaced": dropped,
+                  "fingerprint": cards.fingerprint(payload),
                   "counts": {k: len(v) for k, v in payload.items()
                              if isinstance(v, list)},
                   "patterns_below_floor": payload.get("patterns_below_floor", 0)}
@@ -492,6 +519,14 @@ class CogneeGraph(GraphStore):
                 try:
                     client.add_text(texts)
                     client.cognify(background=True)
+                    # The write-back changed the ledger, so the card set no
+                    # longer matches the fingerprint recorded at ingest. It is
+                    # not stale -- the change was just mirrored -- so move the
+                    # fingerprint forward. Without this the /ops chip turns
+                    # amber the instant the learning beat lands, which is the
+                    # worst possible moment to look like something broke.
+                    from backend.data import db as _db
+                    _db.meta_set("cognee_fingerprint", cards.fingerprint())
                 except Exception:      # noqa: BLE001
                     pass               # retrieval quality degrades; data does not
 

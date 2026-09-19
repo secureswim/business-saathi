@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import config  # noqa: E402
+from backend import health  # noqa: E402
 from backend.actions.orchestrator import LocalOrchestrator, Orchestrator  # noqa: E402
 from backend.models.events import event  # noqa: E402
 
@@ -47,11 +48,14 @@ class N8nOrchestrator(Orchestrator):
                 "callback_url": f"{config.PUBLIC_API_URL or f'http://127.0.0.1:{config.PORT}'}"
                                 f"/api/internal",
             })
+            health.note_serving("orchestrator", "n8n")
             return run
         except Exception as exc:                      # noqa: BLE001
             emit(event("workflow_node", None, run_id=run.run_id, node="n8n webhook",
                        status="failed", attempt=1,
                        detail=f"{type(exc).__name__}; falling back to the local state machine"))
+            # the chip must stop claiming n8n the moment n8n stops answering
+            health.note_serving("orchestrator", "state_machine (n8n unreachable)")
             return self._fallback.execute(run, emit)
 
     def measure(self, run, emit, force: str | None = None):
@@ -59,9 +63,11 @@ class N8nOrchestrator(Orchestrator):
             self._post("/webhook/saathi/measure",
                        {"run_id": run.run_id, "action_id": run.action_id, "force": force})
             run.advance("measuring", "handed to n8n workflow outcome_learning")
+            health.note_serving("orchestrator", "n8n")
             return run
         except Exception as exc:                      # noqa: BLE001
             emit(event("workflow_node", None, run_id=run.run_id, node="n8n webhook",
                        status="failed", attempt=1,
                        detail=f"{type(exc).__name__}; falling back to the local state machine"))
+            health.note_serving("orchestrator", "state_machine (n8n unreachable)")
             return self._fallback.measure(run, emit, force=force)

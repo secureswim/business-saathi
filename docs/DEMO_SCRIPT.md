@@ -4,7 +4,20 @@ Two screens. Merchant route (`/`) on a phone or second window facing the room;
 `/ops` on the projector. The room hears a merchant talking to a phone and sees
 the reasoning behind it on the big screen. That separation is the argument.
 
-**Before you start:** `python scripts/demo_check.py` — all green, or you are not ready.
+**Before you start:** `python scripts/demo_check.py` — all green, or you are not
+ready. Then open `/ops` and look at the adapter chips in the header. They show
+what is actually answering, not what is configured: a green `graph: cognee`
+means Cognee served the last answer, an amber `graph: cognee → sqlite` means it
+is configured and the ledger is doing the work. Do not claim an adapter the
+chip is not green on. If Cognee is amber, run `python scripts/ingest_cognee.py`
+and ask one question to warm it before the room fills.
+
+**After ANY regeneration, Cognee must be re-ingested.** `add_text` only
+appends, so the previous generation's cards stay in the graph and get retrieved
+alongside the new ones — two contradictory answers to "what worked for
+merchants like you". `ingest_cognee.py` now drops the dataset first, and
+`check_integrations.py cognee` compares a fingerprint of the current card set
+against the one recorded at ingest, so STALE is visible rather than silent.
 
 | Time | Beat | Say / do | On the projector |
 | --- | --- | --- | --- |

@@ -160,7 +160,8 @@ path uses payment data and does not ask the merchant for inventory.
 Defaults are all-fake. Flip one only after `tests/test_swap.py` is green.
 
 ```bash
-SAATHI_REAL_COGNEE=1   # Cognee experience graph — run scripts/ingest_cognee.py first
+SAATHI_REAL_COGNEE=1   # Cognee experience graph — run scripts/ingest_cognee.py first,
+                       # and again after EVERY regeneration (it replaces, not appends)
 SAATHI_REAL_SARVAM=1   # Sarvam STT/TTS, needs SARVAM_API_KEY
 SAATHI_REAL_N8N=1      # n8n orchestration, see n8n/README.md
 SAATHI_REAL_LLM=1      # the agent; set OPENAI_API_KEY (or Gemini / NVIDIA NIM)

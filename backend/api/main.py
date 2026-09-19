@@ -90,6 +90,8 @@ async def _startup():
         print(f"\n  !! No database at {config.DB_PATH}")
         print("  !! Run: python scripts/generate.py\n")
     else:
+        for warning in config.config_warnings():
+            print(f"\n  !! {warning}")
         print(f"\n  Business Saathi ready.  adapters: {config.adapters()}")
         print(f"  merchant  ->  http://127.0.0.1:{config.PORT}/")
         print(f"  ops       ->  http://127.0.0.1:{config.PORT}/ops\n")

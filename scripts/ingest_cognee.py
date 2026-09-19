@@ -3,7 +3,14 @@
 Runs once after generation and incrementally on write-back. Takes minutes, not
 seconds, so do not put it in the demo path.
 
-Usage:  python scripts/ingest_cognee.py [--dry-run]
+Usage:  python scripts/ingest_cognee.py [--dry-run] [--append]
+
+REPLACES the dataset by default. Cognee's add_text only appends, so after a
+regeneration -- new merchants, re-measured outcomes, a changed cohort key --
+appending would leave the previous version's cards in the graph to be
+retrieved alongside the new ones. Two contradictory answers to "what worked
+for merchants like you" is worse than not using Cognee at all. Pass --append
+only if you know the ledger has not changed.
 
 Running this script IS the intent, so it does not check SAATHI_REAL_COGNEE --
 that flag governs whether the live demo reads from Cognee, which is a separate
@@ -20,12 +27,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import config  # noqa: E402
+from backend.data import db  # noqa: E402
 from backend.graph import cards  # noqa: E402
 
 
 def main() -> int:
     dry = "--dry-run" in sys.argv
+    replace = "--append" not in sys.argv
     payload = cards.all_cards()
+    fingerprint = cards.fingerprint(payload)
+    ingested = db.meta_get("cognee_fingerprint")
+    print(f"  data fingerprint    {fingerprint}")
+    if ingested:
+        print(f"  cognee holds        {ingested}"
+              f"{'  (already current)' if ingested == fingerprint else '  (STALE)'}")
     print(f"  merchant profiles   {len(payload['profiles']):>6,}")
     print(f"  experience cards    {len(payload['experiences']):>6,}")
     print(f"  cohort patterns     {len(payload['patterns']):>6,}")
@@ -52,8 +67,12 @@ def main() -> int:
 
     from backend.graph.cognee_store import CogneeClient, CogneeGraph
     print("\ningesting into Cognee (this takes a few minutes)...")
-    result = CogneeGraph().ingest_all()
+    if replace:
+        print("  replacing the dataset; pass --append to add without dropping")
+    result = CogneeGraph().ingest_all(replace=replace)
     print(json.dumps(result, indent=1))
+    db.meta_set("cognee_fingerprint", fingerprint)
+    db.meta_set("cognee_ingested_at", time.strftime("%Y-%m-%dT%H:%M:%S"))
 
     # cognify runs on the tenant after we return, so poll instead of leaving
     # you to guess whether the graph actually built.

@@ -297,6 +297,16 @@ def read_config():
             "voice_server_side": v.server_side}
 
 
+@router.get("/api/adapters")
+def adapters(force: bool = False):
+    """What is configured, what is reachable, and what actually answered.
+
+    /ops colours its chips from this rather than from the flags, because a
+    flag says what was intended and this says what happened."""
+    from backend import health
+    return health.snapshot(force=force)
+
+
 @router.get("/api/health")
 def health():
     checks = {"db": False, "graph_store": False, "orchestrator": False,

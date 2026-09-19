@@ -51,11 +51,33 @@ def _tone_wav(seconds: float = 1.0, rate: int = 16000) -> bytes:
 
 
 # ============================================================ cognee
+def _cognee_freshness() -> None:
+    """Reachable is not current. add_text only appends, so a graph built from a
+    previous generation answers happily and wrongly."""
+    from backend.data import db
+    from backend.graph import cards
+    current = cards.fingerprint()
+    ingested = db.meta_get("cognee_fingerprint")
+    if ingested is None:
+        fail("cognee freshness",
+             f"this database has never been ingested (data {current}). "
+             f"Run: python scripts/ingest_cognee.py")
+    elif ingested != current:
+        fail("cognee freshness",
+             f"STALE: cognee holds {ingested}, this database is {current}. "
+             f"Re-run: python scripts/ingest_cognee.py  (it replaces, not appends)")
+    else:
+        line(OK, "cognee freshness",
+             f"matches this database ({current}), ingested "
+             f"{db.meta_get('cognee_ingested_at', 'unknown')}")
+
+
 def check_cognee() -> None:
     print("\n--- Cognee ---")
     if not config.COGNEE_API_KEY:
         line(SKIP, "COGNEE_API_KEY", "not set in .env")
         return
+    _cognee_freshness()
     if not config.COGNEE_BASE_URL:
         fail("COGNEE_BASE_URL", "not set in .env")
         return

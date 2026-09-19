@@ -85,6 +85,11 @@
   .cond{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;
         color:var(--muted)}
   .cond.ok{color:var(--good)} .cond.no{color:var(--bad)}
+  .chip.live      { border-color: var(--ok, #2e7d52); color: var(--ok, #2e7d52); }
+  .chip.configured{ opacity: .72; }
+  .chip.degraded  { border-color: var(--warn, #b8860b); color: var(--warn, #b8860b); font-weight: 600; }
+  .chip.fallback  { opacity: .55; }
+  .chip.simulated { border-color: var(--sim, #8a6d3b); color: var(--sim, #8a6d3b); }
 </style>
 </head>
 <body>

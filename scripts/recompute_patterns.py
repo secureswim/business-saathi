@@ -22,6 +22,8 @@ from backend.graph.sqlite_store import GOOD, SqliteGraph  # noqa: E402
 
 
 def main() -> None:
+    for warning in config.config_warnings():
+        print(f"  !! {warning}\n")
     store = SqliteGraph()
     today = db.today().isoformat()
     merchants = [r for r in repo.all_merchants() if r["avg_daily"] > 0]

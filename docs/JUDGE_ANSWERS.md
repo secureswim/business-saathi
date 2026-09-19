@@ -14,15 +14,40 @@ merchant's data can only describe that merchant. Every answer here cites what
 forbidden from producing a number that is not in the evidence. Show the
 validator and a greyed-out unavailable card.
 
-**3. What does Cognee actually do?** It holds experience cards — situation,
-action, outcome — for every merchant, plus profiles and cohort patterns. A
-question triggers a four-hop traversal: merchant → similar merchants → the same
-situation → what they did → what happened. A successful action adds a card that
-changes the next answer. Show the write-back moving the counter.
+**3. What does Cognee actually do?** Be precise here, because the code is more
+modest than the pitch and a judge who reads it will notice.
+
+Cognee holds experience cards — situation, action, outcome — for every
+merchant, plus profiles and cohort patterns, and a successful action writes a
+new card back. What it does **not** do is compute the numbers. `CogneeGraph`
+wraps `SqliteGraph`: the ledger computes the cohort, the playbook and every
+figure, exactly reproducibly, and Cognee is queried in parallel for semantic
+retrieval whose hits and latency are recorded in `basis` and shown on /ops.
+
+Say it as: *"the retrieval is real and the write-back is real; the arithmetic
+is deliberately not Cognee's job, because a figure a merchant hears has to be
+reproducible from rows we can show you."* That is a stronger answer than
+claiming a four-hop traversal produces the counts, and it survives someone
+opening `backend/graph/cognee_store.py`.
+
+Retrieval is also **non-blocking**: a voice answer is never held waiting for
+it. On a cold cache the first question is answered from the ledger while
+retrieval is still in flight, and the /ops chip says `sqlite (cognee retrieval
+in flight)` rather than claiming Cognee. `scripts/ingest_cognee.py` then
+`/api/adapters` before you present, so the cache is warm and the chip is green.
 
 **4. Why do you need n8n?** The action path has waits, retries, partial failure
-and a scheduled trigger. Three workflows: execution, monitoring, learning. Show
-the n8n canvas and the `/ops` workflow column tracking it node by node.
+and a scheduled trigger, and it has to survive the web process restarting.
+That is an orchestrator's job, not a request handler's. Three workflows:
+execution, monitoring, learning. Show the n8n canvas and the `/ops` workflow
+column tracking it node by node.
+
+Two honest caveats. n8n Cloud cannot reach a laptop, so the callbacks come back
+through a tunnel (`PUBLIC_API_URL`); if that is down the orchestrator falls
+back to the local state machine, the demo continues, and the /ops chip flips to
+`n8n → state_machine (n8n unreachable)` rather than lying about it. And what
+the workflow executes is still a simulated campaign API — n8n really runs, the
+thing it calls is not real.
 
 **5. How does the system learn?** Action → measured outcome → ledger →
 experience card → the cohort aggregate changes → the next merchant's answer

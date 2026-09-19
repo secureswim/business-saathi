@@ -93,3 +93,12 @@ def today() -> date:
     if row is None:
         return date.today()
     return date.fromisoformat(row["value"])
+
+
+def meta_get(key: str, default=None):
+    row = q1("SELECT value FROM meta WHERE key=?", (key,))
+    return row["value"] if row else default
+
+
+def meta_set(key: str, value: str) -> None:
+    write("INSERT OR REPLACE INTO meta VALUES (?,?)", (key, str(value)))
