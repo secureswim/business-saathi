@@ -3,14 +3,18 @@
 Runs once after generation and incrementally on write-back. Takes minutes, not
 seconds, so do not put it in the demo path.
 
-Usage:  python scripts/ingest_cognee.py [--dry-run] [--append]
+Usage:  python scripts/ingest_cognee.py [--dry-run] [--status]
 
-REPLACES the dataset by default. Cognee's add_text only appends, so after a
-regeneration -- new merchants, re-measured outcomes, a changed cohort key --
-appending would leave the previous version's cards in the graph to be
-retrieved alongside the new ones. Two contradictory answers to "what worked
-for merchants like you" is worse than not using Cognee at all. Pass --append
-only if you know the ledger has not changed.
+This only ADDS. It never deletes: dropping a dataset of a few hundred
+documents is slow on the tenant, times out routinely, and a half-finished
+delete leaves you with less than you started with.
+
+`add_text` appends, so ingesting a regenerated ledger into a dataset that
+already holds the previous one puts two contradictory generations of cards in
+the same graph. The fix is a fresh name, not a delete -- every query filters
+by dataset, so bumping COGNEE_DATASET in .env isolates the new cards
+completely and the old dataset can be deleted from the Cognee console
+whenever it is convenient. The ingest warns if it spots that situation.
 
 Running this script IS the intent, so it does not check SAATHI_REAL_COGNEE --
 that flag governs whether the live demo reads from Cognee, which is a separate
@@ -33,7 +37,18 @@ from backend.graph import cards  # noqa: E402
 
 def main() -> int:
     dry = "--dry-run" in sys.argv
-    replace = "--append" not in sys.argv
+
+    if "--status" in sys.argv:
+        from backend.graph.cognee_store import CogneeClient
+        client = CogneeClient()
+        names = [d.get("name") for d in client.list_datasets()]
+        here = config.COGNEE_DATASET in names
+        print(f"  datasets on the tenant   {names}")
+        print(f"  '{config.COGNEE_DATASET}' present  {here}")
+        print(f"  graph summary            {json.dumps(client.graph_summary())[:200]}")
+        print(f"  data fingerprint         {cards.fingerprint()}")
+        print(f"  last ingested            {db.meta_get('cognee_fingerprint')}")
+        return 0
     payload = cards.all_cards()
     fingerprint = cards.fingerprint(payload)
     ingested = db.meta_get("cognee_fingerprint")
@@ -67,9 +82,8 @@ def main() -> int:
 
     from backend.graph.cognee_store import CogneeClient, CogneeGraph
     print("\ningesting into Cognee (this takes a few minutes)...")
-    if replace:
-        print("  replacing the dataset; pass --append to add without dropping")
-    result = CogneeGraph().ingest_all(replace=replace)
+    print(f"  dataset: {config.COGNEE_DATASET}")
+    result = CogneeGraph().ingest_all()
     print(json.dumps(result, indent=1))
     db.meta_set("cognee_fingerprint", fingerprint)
     db.meta_set("cognee_ingested_at", time.strftime("%Y-%m-%dT%H:%M:%S"))

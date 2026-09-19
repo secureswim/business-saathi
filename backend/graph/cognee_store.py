@@ -38,6 +38,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import config  # noqa: E402
+from backend.data import db  # noqa: E402
 from backend.graph import cards  # noqa: E402
 from backend.graph.sqlite_store import SqliteGraph  # noqa: E402
 from backend.graph.store import GraphStore  # noqa: E402
@@ -148,20 +149,57 @@ class CogneeClient:
         self._dataset_id = created["id"]
         return self._dataset_id
 
-    def delete_dataset(self) -> bool:
+    def dataset_exists(self) -> bool:
+        return any(d.get("name") == self.dataset for d in self.list_datasets())
+
+    def delete_dataset(self, timeout: float = 150.0,
+                       confirm_for: float = 180.0, progress=print) -> bool:
         """Drop the dataset so an ingest REPLACES rather than appends.
 
         There is no upsert: `add_text` always appends. Without this, ingesting
         after a regeneration leaves stale experience cards in the graph next to
         the new ones and retrieval happily returns both.
+
+        Deleting a dataset with a few hundred documents is slow on the tenant
+        and the HTTP call frequently times out while the delete carries on
+        server-side. A timeout is therefore NOT treated as a failure: we poll
+        until the dataset is actually gone. What we must never do is give up
+        and ingest anyway -- that is how you end up with two generations of
+        cards in one graph.
         """
-        for d in self.list_datasets():
-            if d.get("name") == self.dataset:
-                self._request("DELETE", f"/datasets/{d['id']}", timeout=60.0)
-                self._dataset_id = None
-                return True
-        self._dataset_id = None
-        return False
+        target = next((d for d in self.list_datasets()
+                       if d.get("name") == self.dataset), None)
+        if target is None:
+            self._dataset_id = None
+            return False
+
+        try:
+            self._request("DELETE", f"/datasets/{target['id']}", timeout=timeout)
+            self._dataset_id = None
+            return True
+        except CogneeError:
+            raise
+        except Exception as exc:                      # noqa: BLE001  (timeouts)
+            progress(f"  delete timed out after {timeout:.0f}s ({type(exc).__name__}); "
+                     f"the tenant is probably still working -- polling")
+
+        deadline = time.time() + confirm_for
+        while time.time() < deadline:
+            time.sleep(10.0)
+            try:
+                if not self.dataset_exists():
+                    progress("  dataset is gone; continuing")
+                    self._dataset_id = None
+                    return True
+            except Exception:                         # noqa: BLE001
+                continue
+            progress(f"  still there; {int(deadline - time.time())}s left")
+
+        raise CogneeError(
+            f"could not confirm that dataset '{self.dataset}' was deleted. "
+            f"Ingesting now would put two generations of cards in one graph. "
+            f"Re-run the ingest in a minute, or delete the dataset in the "
+            f"Cognee console and run with --append.")
 
     def graph_summary(self) -> dict:
         """Node and edge counts.
@@ -339,23 +377,42 @@ class CogneeGraph(GraphStore):
 
     # ------------------------------------------------------------- ingestion
     def ingest_all(self, batch_size: int = 25, cognify: bool = True,
-                   progress=print, replace: bool = True) -> dict:
+                   progress=print, replace: bool = False) -> dict:
         """Full ingest. Run by scripts/ingest_cognee.py after generation.
 
-        `replace` drops the dataset first, which is almost always what you
-        want: the ledger has been regenerated, every merchant id, outcome and
-        cohort key may have moved, and appending would leave the previous
-        version's cards in the graph to be retrieved alongside the new ones.
+        This NEVER deletes. Dropping a dataset with a few hundred documents is
+        slow on the tenant, times out constantly, and a half-finished delete
+        leaves you with less than you started with minutes before a demo.
+
+        The duplication hazard it was guarding against is real, though:
+        `add_text` only appends, so ingesting a regenerated ledger into a
+        dataset that already holds the previous one puts two contradictory
+        generations of cards in the same graph. The answer is a fresh dataset
+        name, not a delete -- every query filters by dataset, so bumping
+        COGNEE_DATASET isolates the new cards completely and the old dataset
+        can be removed from the console whenever it is convenient.
+
+        If the target dataset already holds a different generation, that is
+        called out loudly rather than silently doubled up.
         """
         if self.client is None:
             raise CogneeError("Cognee is not configured")
         payload = cards.all_cards()
-        dropped = False
-        if replace:
-            progress("  dropping the existing dataset (append would duplicate)")
-            dropped = self.client.delete_dataset()
-        self.client.ensure_dataset()
+        fingerprint = cards.fingerprint(payload)
 
+        existing = self.client.dataset_exists()
+        previous = db.meta_get("cognee_fingerprint")
+        if existing and previous and previous != fingerprint:
+            progress("")
+            progress(f"  !! '{self.client.dataset}' already holds cards from a "
+                     f"different generation ({previous} vs {fingerprint}).")
+            progress(f"  !! add_text APPENDS, so retrieval will see both. Set "
+                     f"COGNEE_DATASET to a new name in .env and re-run.")
+            progress("")
+        elif existing:
+            progress(f"  dataset '{self.client.dataset}' already exists; adding to it")
+
+        self.client.ensure_dataset()
         sent = 0
         for group in ("profiles", "experiences", "patterns"):
             texts = [c["text"] for c in payload[group]]
@@ -365,8 +422,8 @@ class CogneeGraph(GraphStore):
                 sent += len(chunk)
                 progress(f"  {group}: {min(i + batch_size, len(texts))}/{len(texts)}")
         result = {"dataset": self.client.dataset, "texts_sent": sent,
-                  "replaced": dropped,
-                  "fingerprint": cards.fingerprint(payload),
+                  "existing_dataset": existing,
+                  "fingerprint": fingerprint,
                   "counts": {k: len(v) for k, v in payload.items()
                              if isinstance(v, list)},
                   "patterns_below_floor": payload.get("patterns_below_floor", 0)}
