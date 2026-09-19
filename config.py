@@ -158,14 +158,23 @@ MIN_ATTEMPTS_TO_RECOMMEND = int(_num("MIN_ATTEMPTS_TO_RECOMMEND", 3))
 
 # --------------------------------------------------------------------------
 # similarity -- a product decision that belongs on a slide, not in the env
+#
+# 75% of the score is MEASURED from the ledger; 25% is what the merchant
+# declared on a form. That ratio is the point. Category used to be 35% against
+# a 0.85 threshold, which made the label a gate: a different label capped the
+# score at 0.65 and no amount of genuine similarity could get past it.
+# Now a mislabelled shop loses 0.10 and can still find its real peers, while a
+# correctly labelled shop that trades nothing like you no longer qualifies.
 # --------------------------------------------------------------------------
 SIMILARITY_WEIGHTS = {
-    "category": 0.35,
-    "locality": 0.25,
-    "volume_band": 0.20,
-    "customer_pattern": 0.20,
+    "hour_shape": 0.30,        # when money arrives across the day
+    "weekday_shape": 0.15,     # and across the week
+    "ticket": 0.20,            # observed rupees per payment, absolute
+    "scale": 0.10,             # observed payments per day, absolute
+    "locality": 0.15,          # declared
+    "category": 0.10,          # declared -- a prior, not a gate
 }
-SIMILARITY_THRESHOLD = _num("SIMILARITY_THRESHOLD", 0.85)   # tight cohort
+SIMILARITY_THRESHOLD = _num("SIMILARITY_THRESHOLD", 0.82)   # tight cohort
 EXTENDED_THRESHOLD = _num("EXTENDED_THRESHOLD", 0.70)       # wider ring, ops only
 COHORT_CAP = 20
 

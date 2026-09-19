@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import config  # noqa: E402
 from backend.data import db, repository as repo  # noqa: E402
-from backend.graph import privacy, similarity  # noqa: E402
+from backend.graph import behaviour, privacy, similarity  # noqa: E402
 from backend.graph.store import GraphStore  # noqa: E402
 
 GOOD = {"recovered", "sustained", "captured_festive"}
@@ -81,16 +81,22 @@ class SqliteGraph(GraphStore):
     def peers(self, merchant_id: str) -> dict:
         t0 = time.time()
         me = repo.merchant_row(merchant_id)
+        candidates = [r for r in repo.all_merchants()
+                      if r["id"] != merchant_id and r["avg_daily"] > 0]
+        # one query for every behavioural profile, then score in memory
+        profiles = behaviour.load_many([merchant_id] + [r["id"] for r in candidates])
+        mine = profiles.get(merchant_id, {})
+
         tight, extended = [], []
-        for r in repo.all_merchants():
-            if r["id"] == merchant_id or r["avg_daily"] <= 0:
-                continue
-            s = similarity.score(me, r)
+        for r in candidates:
+            s = similarity.score(me, r, mine, profiles.get(r["id"]))
             if s["total"] < config.EXTENDED_THRESHOLD:
                 continue
             entry = {"id": r["id"], "category": r["category"], "locality": r["locality"],
                      "volume_band": r["volume_band"], "similarity": s["total"],
-                     "components": s["components"]}
+                     "components": s["components"],
+                     "behavioural": s["behavioural_total"],
+                     "declared": s["declared_total"]}
             (tight if s["total"] >= config.SIMILARITY_THRESHOLD else extended).append(entry)
 
         tight.sort(key=lambda x: -x["similarity"])
@@ -98,7 +104,9 @@ class SqliteGraph(GraphStore):
         tight = tight[:config.COHORT_CAP]
         extended = extended[:config.COHORT_CAP]
 
-        cohort_key = f"{me['category']}|{me['locality_type']}|{me['volume_band']}"
+        # keyed on measured behaviour, not on the onboarding label: see
+        # backend/graph/behaviour.cohort_key
+        cohort_key = behaviour.cohort_key(merchant_id, me["locality_type"], mine)
         return {
             "value": {
                 "merchant": {"id": me["id"], "category": me["category"],
@@ -370,10 +378,7 @@ class SqliteGraph(GraphStore):
     def refresh_learned_pattern(self, cohort_key: str, situation_kind: str,
                                 action_type: str) -> dict:
         """Recompute the aggregate from the ledger, so it is always exact."""
-        category, locality_type, band = cohort_key.split("|")
-        rows = db.q("SELECT id FROM merchants WHERE category=? AND locality_type=? "
-                    "AND volume_band=?", (category, locality_type, band))
-        ids = [r["id"] for r in rows]
+        ids = behaviour.members_of(cohort_key)
         exps = [e for e in repo.cohort_experiences(ids, situation_kind=situation_kind)
                 if e["type"] == action_type]
         tried = len(exps)

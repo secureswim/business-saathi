@@ -111,6 +111,7 @@ function handle(m) {
         <b>category</b><span>${c.category}</span>
         <b>locality</b><span>${c.locality}</span>
         <b>band</b><span>${c.volume_band}</span>
+        ${c.measured ? `<b>measured</b><span class="hi">${c.measured.rhythm} · ${c.measured.ticket_band} · Rs ${c.measured.avg_ticket}/bill · ${c.measured.txns_per_day}/day</span>` : ""}
         <b>history</b><span>${c.days_of_history}d</span>
         <b>obligations</b><span class="${c.has_obligations ? "hi" : "lo"}">${c.has_obligations ? "tier B" : "none"}</span>
         <b>stock feed</b><span class="${c.has_stock_feed ? "hi" : "lo"}">${c.has_stock_feed ? "tier B" : "none"}</span>

@@ -116,7 +116,7 @@ look up, looks again if it needs to, and then speaks. Python supplies the facts,
 the arithmetic and the limits. With no model key at all it still answers, through
 a deterministic path that labels itself `offline`.
 
-## The two rules that matter
+## The three rules that matter
 
 **1. Never fabricate.** Every tool returns `{value, basis, source, tier}`. The
 model may quote only what is inside `value`, and a gate between the answer and
@@ -126,7 +126,14 @@ handed back to the model to correct, up to twice; if it still fails, the
 grounded part is kept and Saathi says plainly what it cannot stand behind. It
 never substitutes an unrelated answer. See `backend/reasoning/validator.py`.
 
-**2. Peers are counts, never names.** Percentages of each merchant's own
+**2. Similarity is measured, not declared.** 75% of the peer score comes from
+the ledger — the shape of the trading day and week, the observed average ticket
+in rupees, the observed transactions per day — and 25% from what the merchant
+ticked on a form. Category is a 0.10 prior, not a gate. A cafe and a chai stall
+both filed under "food stall" are not peers; a shop with the wrong label still
+finds its real ones. See `docs/DESIGN.md`.
+
+**3. Peers are counts, never names.** Percentages of each merchant's own
 baseline enter the graph, never rupee figures. A minimum cohort of five is
 enforced at the adapter boundary in `backend/graph/privacy.py`, not in the UI.
 The merchant cannot be told which shop recovered, because that string never

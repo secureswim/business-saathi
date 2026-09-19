@@ -145,8 +145,9 @@ def test_diagnosis_then_peer_followup_then_proposal(scripted):
     scripted([
         [("get_sales_trend", {}), ("get_peer_cohort", {})],
         [("get_peer_relative_anomaly", {})],
-        {"final": {"hinglish": "Sales 17.9% neeche hain, shaam mein sabse zyada.",
-                   "english": "Sales are down 17.9%, worst in the evening.",
+        {"final": {"hinglish": "Sales apne normal se neeche hain, shaam mein "
+                               "sabse zyada.",
+                   "english": "Sales are below baseline, worst in the evening.",
                    "confidence": "high"}},
     ])
     engine.ask(M, "Sales kyun kam hai?", conversation_id=cid)
@@ -244,14 +245,19 @@ def test_greeting_gets_help_not_a_clarify_loop(scripted):
 def test_an_unbacked_figure_is_repaired_not_replaced(scripted):
     """The old behaviour discarded the whole answer and spoke an unrelated
     template. That is the "it reverted to the original answer" symptom."""
+    from backend.analytics import trend
+    # read the real figure rather than hardcoding one: the generator is
+    # seeded, but the exact decline moves when the population changes
+    real = abs(trend.sales_trend(M)["value"]["change_pct"])
     scripted([
         [("get_sales_trend", {})],
         {"final": {"hinglish": "Sales 63% neeche hain aur profit 99,999 kam hua.",
                    "english": "Sales are down 63% and profit fell by 99,999.",
                    "confidence": "high"}},
         # the repair round: the model corrects itself
-        {"text": '{"hinglish": "Sales 17.9% neeche hain.", '
-                 '"english": "Sales are down 17.9%.", "confidence": "high"}'},
+        {"text": '{"hinglish": "Sales %s%% neeche hain.", '
+                 '"english": "Sales are down %s%%.", "confidence": "high"}'
+                 % (real, real)},
     ])
     r = engine.ask(M, "sales kyun kam hain", conversation_id=conversation.new_id())
     answer = r["answer"]
@@ -264,8 +270,10 @@ def test_an_unbacked_figure_is_repaired_not_replaced(scripted):
 def test_an_unrepairable_answer_keeps_what_is_grounded(scripted):
     """If repair fails we still never speak a fabricated figure -- but we also
     never swap in an unrelated answer. We keep the true part and say so."""
-    bad = {"hinglish": "Sales 17.9% neeche hain. Profit 88,888 kam hua.",
-           "english": "Sales are down 17.9%. Profit fell 88,888.",
+    from backend.analytics import trend
+    real = abs(trend.sales_trend(M)["value"]["change_pct"])
+    bad = {"hinglish": f"Sales {real}% neeche hain. Profit 88,888 kam hua.",
+           "english": f"Sales are down {real}%. Profit fell 88,888.",
            "confidence": "high"}
     scripted([
         [("get_sales_trend", {})],

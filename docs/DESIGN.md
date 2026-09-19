@@ -44,6 +44,56 @@ the whole technical argument.
 
 `data/repository.py` is the only module that writes SQL.
 
+## Similarity: measured, not declared
+
+75% of the peer score is read out of the ledger; 25% is what the merchant
+declared on a form.
+
+| component | weight | source |
+| --- | --- | --- |
+| shape of the trading day | 0.30 | measured (centred correlation) |
+| shape of the trading week | 0.15 | measured (centred correlation) |
+| average ticket, in rupees | 0.20 | measured, absolute |
+| transactions per day | 0.10 | measured, absolute |
+| locality | 0.15 | declared |
+| category | 0.10 | declared |
+
+This was the other way round, and it broke the central claim. Category carried
+0.35 against a 0.85 threshold, so a different label capped a merchant at 0.65
+and an "adjacent" label at 0.825 — neither could ever qualify, whatever the two
+shops actually did. The form was a gate, not a signal. Two unlike businesses
+that ticked the same box — a corner kirana and a cafe under "Food & Beverage" —
+were pooled, and the cafe would be told that five of six shops like it
+recovered with an evening offer, on the strength of six kiranas.
+
+The behavioural component could not rescue it either, because it compared two
+all-positive vectors with cosine similarity. Those vectors share a large mean
+that dominates the dot product, so everything looked alike: across all 159
+peers of the demo merchant, cosine spanned 0.58–1.00 and rated a mobile
+accessories shop 0.87 against a chai stall's 0.91. Centring first spans
+−0.23–1.00 on the same data and separates those to 0.63 against 0.72. Same
+information, three times the discrimination.
+
+Ticket and scale are deliberately **absolute**. The old volume band was
+measured against each category's own mean, so it inherited the label too and a
+wrong category produced a wrong band on top of it — the errors compounded
+instead of cancelling.
+
+`learned_patterns.cohort_key` is now `rhythm|ticket_band|locality_type`, all
+measured. It used to be `category|locality_type|volume_band`, which meant a
+wrong label walked straight into every "worked for X of Y" figure a merchant
+was told.
+
+The practical test: relabel the demo merchant as a pharmacy and it keeps 7 of
+its 8 peers. Under the old weighting it kept none.
+
+### What this still cannot see
+
+There are no customer identifiers in the ledger, so repeat-customer rate —
+probably the strongest single discriminator between a cafe and a chai stall —
+is not available. Individual `payments` rows exist only for the demo cohort.
+Both are honest limits of the synthetic data, not of the approach.
+
 ## Evidence
 
 ```python

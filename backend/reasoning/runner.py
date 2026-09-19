@@ -152,12 +152,29 @@ class Runner:
 
     # ---------------------------------------------------------------- tools
     def _t_get_merchant_context(self) -> None:
+        from backend.graph import behaviour
+
         self.context = repo.merchant_context(self.merchant_id)
+        value = self.context.to_dict()
+        # The declared label and the measured behaviour sit side by side on
+        # purpose. They can disagree -- a cafe and a chai stall both tick
+        # "food stall" -- and when they do, it is the measured half that
+        # decides who counts as a peer.
+        profile = behaviour.load(self.merchant_id)
+        if profile.get("available"):
+            value["measured"] = {
+                "rhythm": profile["rhythm"],
+                "ticket_band": profile["ticket_band"],
+                "avg_ticket": profile["avg_ticket"],
+                "txns_per_day": profile["txns_per_day"],
+            }
         self._add(Evidence(
-            tool="get_merchant_context", value=self.context.to_dict(),
+            tool="get_merchant_context", value=value,
             basis={"source": "repository.merchant_context",
-                   "note": "category, locality and volume band come from onboarding; "
-                           "days_of_history is counted from the transaction ledger"},
+                   "note": "category and locality come from onboarding; the "
+                           "`measured` block is read from the payment ledger and "
+                           "is what decides the peer cohort",
+                   "behaviour_window_days": profile.get("window_days")},
             source="own_data", tier="A"))
 
     def _t_get_business_health(self) -> None:

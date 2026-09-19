@@ -88,6 +88,28 @@ STOCK_ITEMS = {
 
 GOOD = {"recovered", "sustained", "captured_festive"}
 
+# ---------------------------------------------------------------- pattern 9
+# Two genuinely different businesses filed under ONE onboarding label.
+#
+# Real category pickers are coarse: a corner kirana and a cafe both tick "Food
+# & Beverage". If the cohort is decided by that label, their results get pooled
+# and the cafe is told what worked for kiranas. Without a case like this in the
+# data, the similarity engine cannot be shown to handle it -- every synthetic
+# category behaved differently from every other, so the label was accidentally
+# always right.
+#
+# So a third of the food stalls are cafes: same label, different trade. Higher
+# ticket, afternoon-and-evening rhythm, far fewer transactions. Behaviour
+# should separate them; the label cannot.
+SUBTYPES = {
+    "chai_stall": {"ticket": 1.00, "txn_scale": 1.00,
+                   "peaks": [(8, 2.4), (9, 1.9), (12, 2.4), (13, 2.6),
+                             (17, 2.2), (18, 2.6), (19, 2.2)]},
+    "cafe": {"ticket": 3.60, "txn_scale": 0.30,
+             "peaks": [(11, 1.6), (15, 2.4), (16, 2.8), (17, 2.6),
+                       (19, 2.2), (20, 2.4), (21, 1.8)]},
+}
+
 # How an action's intended effect is written into the ledger. `hours` is None
 # for an all-day action. `worked` decides which uplift band is sampled.
 ACTION_EFFECT = {
@@ -122,8 +144,9 @@ def classify(delta_pct: float, action_type: str, festive: bool = False) -> str:
 
 
 # --------------------------------------------------------------------------
-def hourly_vector(category: str, locality_type: str, rng: random.Random) -> list[float]:
-    peaks = PEAKS[(category, locality_type)]
+def hourly_vector(category: str, locality_type: str, rng: random.Random,
+                  subtype: str | None = None) -> list[float]:
+    peaks = SUBTYPES[subtype]["peaks"] if subtype else PEAKS[(category, locality_type)]
     vec = [0.35] * (CLOSE_HOUR - OPEN_HOUR + 1)
     for hour, weight in peaks:
         i = hour - OPEN_HOUR
@@ -207,12 +230,14 @@ def main() -> None:
                     "volume_band": band_for(avg_daily, category),
                     "avg_daily": round(avg_daily, 2),
                     "hourly_vector": hourly_vector(category, ltype, rng),
+                    "subtype": None,
                     # tier B availability: ~40% obligations, ~30% stock feed
                     "has_obligations": 1 if rng.random() < 0.40 else 0,
                     "has_stock_feed": 1 if rng.random() < 0.30 else 0,
                     # per-merchant ticket personality, so the average ticket is
                     # not a category constant divided back out of the amount
                     "ticket_bias": rng.uniform(0.80, 1.25),
+                    "txn_scale": 1.0,
                 })
 
     demo = merchants[0]
@@ -231,8 +256,52 @@ def main() -> None:
             m["avg_daily"] = round(rng.uniform(4200.0, 5750.0), 2) if m["id"] != "M001" \
                 else 5300.0
             m["volume_band"] = band_for(m["avg_daily"], "food_stall")
-    # M001 has obligations (so the money answer is a net position) but NO stock
-    # feed (so a stock question must ask the merchant). Both are demo beats.
+
+    # pattern 9: cafes under the food_stall label.
+    #
+    # In every cell except the demo's, the last three food stalls become cafes.
+    # The demo cell has no spare merchants -- M001, its six seeded decline
+    # peers and the peer merchant account for all eight -- so three cafes are
+    # APPENDED there instead. Converting one in place would have made the peer
+    # merchant a cafe and quietly broken both the learning demo and the
+    # "switch to M008" beat.
+    cafe_seq = 0
+    for locality, ltype in config.LOCALITIES:
+        cell = [m for m in merchants
+                if m["category"] == "food_stall" and m["locality"] == locality]
+        for m in cell:
+            m["subtype"] = "chai_stall"
+
+        spec = SUBTYPES["cafe"]
+        if ltype == "college_area":
+            for _ in range(3):
+                cafe_seq += 1
+                avg_daily = round(rng.uniform(4200.0, 5750.0), 2)
+                merchants.append({
+                    "id": f"M{160 + cafe_seq:03d}",
+                    "name": f"Cafe {cafe_seq}",
+                    "category": "food_stall", "locality": locality,
+                    "locality_type": ltype,
+                    "opened_on": (start_day - timedelta(days=rng.randint(30, 900))).isoformat(),
+                    "volume_band": band_for(avg_daily, "food_stall"),
+                    "avg_daily": avg_daily,
+                    "hourly_vector": hourly_vector("food_stall", ltype, rng,
+                                                   subtype="cafe"),
+                    "has_obligations": 1 if rng.random() < 0.40 else 0,
+                    "has_stock_feed": 1 if rng.random() < 0.30 else 0,
+                    "ticket_bias": spec["ticket"],
+                    "txn_scale": spec["txn_scale"],
+                    "subtype": "cafe",
+                })
+        else:
+            for m in cell[-3:]:
+                cafe_seq += 1
+                m["subtype"] = "cafe"
+                m["ticket_bias"] = spec["ticket"]
+                m["txn_scale"] = spec["txn_scale"]
+                m["hourly_vector"] = hourly_vector("food_stall", ltype, rng,
+                                                   subtype="cafe")
+                m["name"] = f"Cafe {cafe_seq}"
 
     # ---------------------------------------------------------- pattern 8
     cold = {"id": config.COLDSTART_MERCHANT, "name": "New Chai Stall",
@@ -250,7 +319,10 @@ def main() -> None:
 
     demo_cell = [m["id"] for m in merchants
                  if m["category"] == "food_stall" and m["locality_type"] == "college_area"]
-    peers = sorted(set(demo_cell) - {"M001"})
+    # the appended cafes share the cell but are a different trade, so the
+    # seeded "6 peers declined, 5 recovered" story must not draw from them
+    peers = sorted(set(demo_cell) - {"M001"}
+                   - {m["id"] for m in merchants if m.get("subtype") == "cafe"})
     decline_peers = peers[:6]                 # pattern 3: 6 peers hit the same condition
     recovered_peers = set(decline_peers[:5])  #            5 of them recovered
     surge_cell = [m["id"] for m in merchants
@@ -294,7 +366,11 @@ def main() -> None:
     for m in merchants:
         if m["id"] in decline_peers:
             d_start = today - timedelta(days=rng.randint(70, 200))
-            o_start = d_start + timedelta(days=9)
+            # 14 days, not 9: the outcome measures `before` over the 12 days
+            # preceding the offer, so a shorter gap put pre-decline trading
+            # inside that window, inflated the baseline, and turned a genuine
+            # recovery into a measured non-event.
+            o_start = d_start + timedelta(days=14)
             m["_decline_start"] = d_start
             m["_offer_start"] = o_start
             s = add_situation(m["id"], "evening_decline", d_start,
@@ -390,7 +466,7 @@ def main() -> None:
 
             # a per-day average ticket, so avg_ticket is a real observable
             ticket_today = max(6.0, rng.gauss(mean_ticket * m["ticket_bias"],
-                                              sig_ticket * 0.45))
+                                              sig_ticket * 0.45 * m["ticket_bias"]))
 
             day_amt = band_amt = 0.0
             for i, w in enumerate(vec):
@@ -536,15 +612,11 @@ def main() -> None:
     ).fetchone()
     change = ((cur[0] / cur[1]) - (base[0] / base[1])) / (base[0] / base[1]) * 100.0
 
-    # Both demo merchants must have a cohort the privacy gate will actually
-    # serve, or the collective answer silently vanishes on stage.
-    cohorts = {}
-    for mid in (config.DEMO_MERCHANT, config.PEER_MERCHANT):
-        row = con.execute("SELECT category, locality_type, volume_band FROM merchants "
-                          "WHERE id=?", (mid,)).fetchone()
-        cohorts[mid] = con.execute(
-            "SELECT COUNT(*) FROM merchants WHERE category=? AND locality_type=? "
-            "AND volume_band=? AND avg_daily>0 AND id<>?", (*row, mid)).fetchone()[0]
+    subtypes = {}
+    for name, count in con.execute(
+            "SELECT CASE WHEN name LIKE 'Cafe%' THEN 'cafe' ELSE 'other' END s, "
+            "COUNT(*) FROM merchants GROUP BY s"):
+        subtypes[name] = count
     con.close()
 
     print(f"built {db_path}")
@@ -554,18 +626,14 @@ def main() -> None:
     print("  (the rest exercise the absence paths on purpose)")
     print(f"  festive window          {fest_start} .. {fest_end}")
     print(f"  demo merchant 7d change {change:+.1f}%")
-    for mid, size in cohorts.items():
-        print(f"  cohort cell for {mid:<6s}  {size}")
+    print(f"  cafes sharing the food_stall label: {subtypes.get('cafe', 0)}")
     if change > -10:
         raise SystemExit(
             f"demo merchant's decline measured {change:+.1f}%, which is not a "
             f"story the product can tell. The seeded decline did not survive "
             f"into the ledger -- fix the generator, do not lower the bar.")
-    thin = {k: v for k, v in cohorts.items() if v < config.MIN_COHORT_SIZE}
-    if thin:
-        raise SystemExit(
-            f"cohort below the privacy floor of {config.MIN_COHORT_SIZE}: {thin}. "
-            f"The graph would correctly refuse to answer for these merchants.")
+    # The cohort itself is asserted in scripts/recompute_patterns.py, which is
+    # where the behavioural profiles it depends on are computed.
 
 
 if __name__ == "__main__":
